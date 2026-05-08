@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${product.name} | Fashion Store`,
       description: product.description,
       type: "website",
-      images: product.images[0] ? [{ url: product.images[0], width: 800, height: 1000, alt: product.name }] : [],
+      images: product.media.cover ? [{ url: product.media.cover, width: 800, height: 1000, alt: product.name }] : [],
     },
   }
 }
@@ -53,7 +53,7 @@ export default async function ProductPage({ params }: Props) {
                 "@type": "Product",
                 name: product.name,
                 description: product.description,
-                image: product.images[0] || undefined,
+                image: product.media.cover || undefined,
                 brand: { "@type": "Brand", name: "Fashion Store" },
                 offers: {
                   "@type": "Offer",

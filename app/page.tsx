@@ -11,8 +11,6 @@ import { HowToBuySection } from "@/components/home/how-to-buy-section"
 import { AboutSection } from "@/components/home/about-section"
 import { InstagramSection } from "@/components/home/instagram-section"
 import { CtaSection } from "@/components/home/cta-section"
-import { DropsSection } from "@/components/home/drops-section"
-import { StampDetailSection } from "@/components/home/stamp-detail-section"
 
 export default function Home() {
   return (
@@ -22,10 +20,8 @@ export default function Home() {
         <HeroSection />
         <CategoriesSection />
         <FeaturedSection />
-        <DropsSection />
         <PromotionsSection />
         <NewArrivalsSection />
-        <StampDetailSection />
         <LowStockSection />
         <HowToBuySection />
         <BenefitsSection />

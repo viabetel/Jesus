@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ===== HEX FALLBACKS (todos browsers) ===== */
+/* ===== HEX FALLBACKS (all browsers) ===== */
 :root {
   --background: #fafafa;
   --foreground: #171717;
@@ -145,9 +145,4 @@ a, button, [role="button"] { -webkit-tap-highlight-color: transparent; }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* Espaço para o sticky CTA do produto no mobile (evita CTA cobrir conteúdo) */
-@media (max-width: 639px) {
-  .has-sticky-cta { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
 }
