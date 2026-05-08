@@ -1,27 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // typescript.ignoreBuildErrors removido — preferimos descobrir e corrigir o erro real
-  // se algum surgir no build. (Validado localmente com `tsc --noEmit`.)
+  // TypeScript errors are checked at build time (tsc passes clean)
   images: {
     unoptimized: false,
     remotePatterns: [
-      // Google Drive — direct image links (lh3 gera /d/ID)
+      // Google Drive direct links (via lh3)
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
         pathname: "/d/**",
-      },
-      // Google Drive — thumbnails (drive.google.com/thumbnail?id=...)
-      {
-        protocol: "https",
-        hostname: "drive.google.com",
       },
       // Vercel Blob Storage (legacy logo URLs)
       {
         protocol: "https",
         hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com",
       },
-      // Cloudinary (recomendado para produção)
+      // Cloudinary (recommended for production)
       {
         protocol: "https",
         hostname: "res.cloudinary.com",

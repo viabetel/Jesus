@@ -22,7 +22,7 @@ export function LowStockSection() {
           {lowStock.map((p) => (
             <Link key={p.id} href={`/produto/${p.slug}`} className="group flex items-center gap-3 rounded-xl border bg-card p-3 transition-shadow hover:shadow-md sm:flex-col sm:items-start sm:p-4">
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted sm:aspect-square sm:h-auto sm:w-full">
-                <Image src={p.images[0] || "/brand/placeholder-product.svg"} alt={p.name} fill className="object-cover" sizes="(max-width:640px) 64px, 33vw" />
+                <Image src={p.media.cover || "/brand/placeholder-product.svg"} alt={p.name} fill className="object-cover" sizes="(max-width:640px) 64px, 33vw" />
               </div>
               <div className="flex-1">
                 <p className="line-clamp-1 font-serif text-xs font-semibold sm:text-sm">{p.name}</p>
