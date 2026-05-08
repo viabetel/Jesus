@@ -25,8 +25,8 @@ export function PromotionsSection() {
 
             <div className="flex flex-col sm:flex-row">
               {/* Image */}
-              <div className="relative aspect-[3/2] w-full sm:aspect-auto sm:w-2/5 lg:w-1/3">
-                <Image src={p.media.cover || "/brand/placeholder-product.svg"} alt={p.name} fill className="object-cover" sizes="(max-width:640px) 100vw, 40vw" />
+              <div className="relative aspect-square w-full sm:aspect-auto sm:w-2/5 lg:w-1/3">
+                <Image src={p.images[0] || "/brand/placeholder-product.svg"} alt={p.name} fill className="object-cover" sizes="(max-width:640px) 100vw, 40vw" />
                 {discount > 0 && (
                   <span className="absolute left-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white">
                     -{discount}%

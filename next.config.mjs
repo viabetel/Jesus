@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // TypeScript errors are checked at build time (tsc passes clean)
   images: {
     unoptimized: false,
     remotePatterns: [
@@ -9,6 +8,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
         pathname: "/d/**",
+      },
+      // Google Drive (for video poster fallbacks)
+      {
+        protocol: "https",
+        hostname: "drive.google.com",
       },
       // Vercel Blob Storage (legacy logo URLs)
       {

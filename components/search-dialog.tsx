@@ -77,7 +77,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 >
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                     <Image
-                      src={product.media.cover || "/brand/placeholder-product.svg"}
+                      src={product.images[0] || "/brand/placeholder-product.svg"}
                       alt={product.name}
                       fill
                       className="object-cover"

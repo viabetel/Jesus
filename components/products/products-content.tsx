@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
-import { Filter, X, Search, SlidersHorizontal, ShoppingBag } from "lucide-react"
+import { Filter, X, Search, SlidersHorizontal, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -31,6 +31,7 @@ const sortOptions = [
 
 const MIN_PRICE = 0
 const MAX_PRICE = 200
+const PRODUCTS_PER_PAGE = 24
 
 export function ProductsContent() {
   const searchParams = useSearchParams()
@@ -49,6 +50,7 @@ export function ProductsContent() {
   const [showNewArrivals, setShowNewArrivals] = useState(false)
   const [sortBy, setSortBy] = useState("recent")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [catalogPage, setCatalogPage] = useState(1)
 
   // Sync filters to URL
   const syncUrl = useCallback((cats: string[], q: string) => {
@@ -62,11 +64,13 @@ export function ProductsContent() {
   const handleCategoryChange = (slug: string, checked: boolean) => {
     const next = checked ? [...selectedCategories, slug] : selectedCategories.filter((c) => c !== slug)
     setSelectedCategories(next)
+    setCatalogPage(1)
     syncUrl(next, search)
   }
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
+    setCatalogPage(1)
     syncUrl(selectedCategories, val)
   }
 
@@ -97,9 +101,18 @@ export function ProductsContent() {
     return result
   }, [search, selectedCategories, selectedSizes, selectedColors, priceRange, showPromotions, showNewArrivals, sortBy])
 
+  // Pagination — reset when filters change
+  const totalCatalogPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE)
+  const paginatedProducts = useMemo(() => {
+    const effectivePage = catalogPage > Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE) ? 1 : catalogPage
+    const start = (effectivePage - 1) * PRODUCTS_PER_PAGE
+    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE)
+  }, [filteredProducts, catalogPage])
+
   const clearFilters = () => {
     setSearch(""); setSelectedCategories([]); setSelectedSizes([]); setSelectedColors([])
     setPriceRange([MIN_PRICE, MAX_PRICE]); setShowPromotions(false); setShowNewArrivals(false); setSortBy("recent")
+    setCatalogPage(1)
     router.replace(pathname, { scroll: false })
   }
 
@@ -245,12 +258,50 @@ export function ProductsContent() {
         {/* Results */}
         <p className="mb-3 text-xs text-muted-foreground sm:mb-4 sm:text-sm">
           {filteredProducts.length} {filteredProducts.length === 1 ? "produto" : "produtos"}
+          {totalCatalogPages > 1 && ` — página ${catalogPage} de ${totalCatalogPages}`}
         </p>
 
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4">
-            {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
-          </div>
+        {paginatedProducts.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4">
+              {paginatedProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+            </div>
+
+            {/* Pagination */}
+            {totalCatalogPages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
+                  onClick={() => { setCatalogPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }) }}
+                  disabled={catalogPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: totalCatalogPages }, (_, i) => i + 1).map((p) => (
+                  <Button
+                    key={p}
+                    variant={catalogPage === p ? "default" : "outline"}
+                    size="icon"
+                    className="h-9 w-9 rounded-full text-xs"
+                    onClick={() => { setCatalogPage(p); window.scrollTo({ top: 0, behavior: "smooth" }) }}
+                  >
+                    {p}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
+                  onClick={() => { setCatalogPage((p) => Math.min(totalCatalogPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }) }}
+                  disabled={catalogPage === totalCatalogPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/60">

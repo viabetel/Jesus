@@ -143,7 +143,7 @@ export function CartContent() {
                 className="relative h-28 w-22 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-32 sm:w-24"
               >
                 <Image
-                  src={item.product.media.cover || "/brand/placeholder-product.svg"}
+                  src={item.product.images[0] || "/brand/placeholder-product.svg"}
                   alt={item.product.name}
                   fill
                   className="object-cover"

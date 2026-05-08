@@ -6,7 +6,7 @@ import { products } from "@/lib/data/products"
 
 export function InstagramSection() {
   // Use product images as "feed" — no iframe dependency
-  const feedImages = products.slice(0, 6).map((p) => p.media.cover).filter(Boolean)
+  const feedImages = products.slice(0, 6).map((p) => p.images[0]).filter(Boolean)
 
   return (
     <section className="py-8 sm:py-14 lg:py-20">
