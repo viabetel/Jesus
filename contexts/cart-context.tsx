@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import type { Product, ProductColor, ProductSize } from "@/lib/data/products"
+import { getVariantStock } from "@/lib/data/products"
 
 export type CartItem = {
   product: Product
@@ -12,9 +13,9 @@ export type CartItem = {
 
 type CartContextType = {
   items: CartItem[]
-  addItem: (product: Product, size: ProductSize, color: ProductColor, quantity?: number) => void
+  addItem: (product: Product, size: ProductSize, color: ProductColor, quantity?: number) => boolean
   removeItem: (productId: string, size: ProductSize, colorName: string) => void
-  updateQuantity: (productId: string, size: ProductSize, colorName: string, quantity: number) => void
+  updateQuantity: (productId: string, size: ProductSize, colorName: string, quantity: number) => boolean
   clearCart: () => void
   getItemCount: () => number
   getSubtotal: () => number
@@ -27,131 +28,70 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [isHydrated, setIsHydrated] = useState(false)
 
-  // Load cart from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem("fashion-store-cart")
-    if (savedCart) {
-      try {
-        setItems(JSON.parse(savedCart))
-      } catch {
-        localStorage.removeItem("fashion-store-cart")
-      }
-    }
+    const saved = localStorage.getItem("fashion-store-cart")
+    if (saved) { try { setItems(JSON.parse(saved)) } catch { localStorage.removeItem("fashion-store-cart") } }
     setIsHydrated(true)
   }, [])
 
-  // Save cart to localStorage whenever it changes
   useEffect(() => {
-    if (isHydrated) {
-      localStorage.setItem("fashion-store-cart", JSON.stringify(items))
-    }
+    if (isHydrated) localStorage.setItem("fashion-store-cart", JSON.stringify(items))
   }, [items, isHydrated])
 
-  const addItem = (
-    product: Product,
-    size: ProductSize,
-    color: ProductColor,
-    quantity: number = 1
-  ) => {
-    setItems((currentItems) => {
-      const existingIndex = currentItems.findIndex(
-        (item) =>
-          item.product.id === product.id &&
-          item.size === size &&
-          item.color.name === color.name
-      )
+  const addItem = (product: Product, size: ProductSize, color: ProductColor, quantity: number = 1): boolean => {
+    // Validate variant exists and has stock
+    const variantStock = getVariantStock(product, color.name, size)
+    if (variantStock === 0) return false
 
-      if (existingIndex > -1) {
-        const newItems = [...currentItems]
-        newItems[existingIndex].quantity += quantity
-        return newItems
+    let success = true
+    setItems((curr) => {
+      const idx = curr.findIndex(i => i.product.id === product.id && i.size === size && i.color.name === color.name)
+      if (idx > -1) {
+        const newQty = curr[idx].quantity + quantity
+        if (newQty > variantStock) { success = false; return curr }
+        const next = [...curr]
+        next[idx] = { ...next[idx], quantity: newQty }
+        return next
       }
-
-      return [...currentItems, { product, size, color, quantity }]
+      if (quantity > variantStock) { success = false; return curr }
+      return [...curr, { product, size, color, quantity }]
     })
+    return success
   }
 
   const removeItem = (productId: string, size: ProductSize, colorName: string) => {
-    setItems((currentItems) =>
-      currentItems.filter(
-        (item) =>
-          !(
-            item.product.id === productId &&
-            item.size === size &&
-            item.color.name === colorName
-          )
-      )
-    )
+    setItems(curr => curr.filter(i => !(i.product.id === productId && i.size === size && i.color.name === colorName)))
   }
 
-  const updateQuantity = (
-    productId: string,
-    size: ProductSize,
-    colorName: string,
-    quantity: number
-  ) => {
-    if (quantity < 1) {
-      removeItem(productId, size, colorName)
-      return
-    }
-
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.product.id === productId &&
-        item.size === size &&
-        item.color.name === colorName
-          ? { ...item, quantity }
-          : item
-      )
-    )
+  const updateQuantity = (productId: string, size: ProductSize, colorName: string, quantity: number): boolean => {
+    if (quantity < 1) { removeItem(productId, size, colorName); return true }
+    let success = true
+    setItems(curr => curr.map(i => {
+      if (i.product.id === productId && i.size === size && i.color.name === colorName) {
+        const stock = getVariantStock(i.product, colorName, size)
+        if (quantity > stock) { success = false; return i }
+        return { ...i, quantity }
+      }
+      return i
+    }))
+    return success
   }
 
-  const clearCart = () => {
-    setItems([])
-  }
-
-  const getItemCount = () => {
-    return items.reduce((total, item) => total + item.quantity, 0)
-  }
-
-  const getSubtotal = () => {
-    return items.reduce(
-      (total, item) => total + item.product.price * item.quantity,
-      0
-    )
-  }
-
-  const isInCart = (productId: string, size?: ProductSize, colorName?: string) => {
-    return items.some(
-      (item) =>
-        item.product.id === productId &&
-        (size === undefined || item.size === size) &&
-        (colorName === undefined || item.color.name === colorName)
-    )
-  }
+  const clearCart = () => setItems([])
+  const getItemCount = () => items.reduce((t, i) => t + i.quantity, 0)
+  const getSubtotal = () => items.reduce((t, i) => t + i.product.price * i.quantity, 0)
+  const isInCart = (pid: string, size?: ProductSize, colorName?: string) =>
+    items.some(i => i.product.id === pid && (size === undefined || i.size === size) && (colorName === undefined || i.color.name === colorName))
 
   return (
-    <CartContext.Provider
-      value={{
-        items,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        getItemCount,
-        getSubtotal,
-        isInCart,
-      }}
-    >
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, getItemCount, getSubtotal, isInCart }}>
       {children}
     </CartContext.Provider>
   )
 }
 
 export function useCart() {
-  const context = useContext(CartContext)
-  if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider")
-  }
-  return context
+  const ctx = useContext(CartContext)
+  if (!ctx) throw new Error("useCart must be used within a CartProvider")
+  return ctx
 }

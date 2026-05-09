@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
-import { Filter, X, Search, SlidersHorizontal, ShoppingBag } from "lucide-react"
+import { Filter, X, Search, SlidersHorizontal, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -11,46 +11,40 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { ProductCard } from "@/components/product-card"
-import { products, categories, type ProductCategory } from "@/lib/data/products"
+import { products, categories, getProductColors, getProductSizes, getTotalStock, type ProductCategory } from "@/lib/data/products"
 import { formatPrice } from "@/lib/format"
 
-const sizes = ["P", "M", "G", "GG"]
-const colors = [
-  { name: "Preto", value: "#000000" },
-  { name: "Branco", value: "#FFFFFF" },
-  { name: "Off-white", value: "#FAF9F6" },
-  { name: "Cinza", value: "#808080" },
-  { name: "Areia", value: "#C2B280" },
-]
+// Derive filter options from real product data
+const allSizes = [...new Set(products.flatMap(p => getProductSizes(p)))]
+const allColors = (() => {
+  const seen = new Map<string, string>()
+  products.forEach(p => getProductColors(p).forEach(c => { if (!seen.has(c.name)) seen.set(c.name, c.value) }))
+  return [...seen.entries()].map(([name, value]) => ({ name, value }))
+})()
 const sortOptions = [
   { value: "recent", label: "Mais recentes" },
   { value: "price-asc", label: "Menor preço" },
   { value: "price-desc", label: "Maior preço" },
   { value: "name", label: "A-Z" },
 ]
-
-const MIN_PRICE = 0
-const MAX_PRICE = 200
+const MIN_PRICE = 0; const MAX_PRICE = 200; const PER_PAGE = 24
 
 export function ProductsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
 
-  const initialCategory = searchParams.get("categoria") || ""
-  const initialSearch = searchParams.get("busca") || ""
-
-  const [search, setSearch] = useState(initialSearch)
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategory ? [initialCategory] : [])
+  const [search, setSearch] = useState(searchParams.get("busca") || "")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams.get("categoria") ? [searchParams.get("categoria")!] : [])
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [selectedColors, setSelectedColors] = useState<string[]>([])
-  const [priceRange, setPriceRange] = useState<[number, number]>([MIN_PRICE, MAX_PRICE])
+  const [priceRange, setPriceRange] = useState([MIN_PRICE, MAX_PRICE])
   const [showPromotions, setShowPromotions] = useState(false)
   const [showNewArrivals, setShowNewArrivals] = useState(false)
   const [sortBy, setSortBy] = useState("recent")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [page, setPage] = useState(1)
 
-  // Sync filters to URL
   const syncUrl = useCallback((cats: string[], q: string) => {
     const params = new URLSearchParams()
     if (cats.length === 1) params.set("categoria", cats[0])
@@ -60,35 +54,36 @@ export function ProductsContent() {
   }, [router, pathname])
 
   const handleCategoryChange = (slug: string, checked: boolean) => {
-    const next = checked ? [...selectedCategories, slug] : selectedCategories.filter((c) => c !== slug)
-    setSelectedCategories(next)
-    syncUrl(next, search)
+    const next = checked ? [...selectedCategories, slug] : selectedCategories.filter(c => c !== slug)
+    setSelectedCategories(next); setPage(1); syncUrl(next, search)
   }
-
-  const handleSearchChange = (val: string) => {
-    setSearch(val)
-    syncUrl(selectedCategories, val)
-  }
+  const handleSearchChange = (val: string) => { setSearch(val); setPage(1); syncUrl(selectedCategories, val) }
 
   const filteredProducts = useMemo(() => {
-    let result = [...products]
+    let result = [...products].filter(p => p.status === "ativo")
     if (search) {
       const q = search.toLowerCase()
-      result = result.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) || (p.tags || []).some(t => t.toLowerCase().includes(q)) ||
+        getProductColors(p).some(c => c.name.toLowerCase().includes(q)) ||
+        getProductSizes(p).some(s => s.toLowerCase().includes(q))
+      )
     }
     if (selectedCategories.length > 0) {
-      result = result.filter((p) => {
-        const slug = p.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
-        return selectedCategories.some((cat) => cat === slug || p.category.toLowerCase() === cat.toLowerCase())
+      result = result.filter(p => {
+        const cat = categories.find(c => c.slug === selectedCategories[0])
+        if (!cat) return true
+        if (cat.slug === "lancamentos") return p.isNew
+        if (cat.slug === "promocoes") return p.isPromotion
+        return p.category === cat.name
       })
     }
-    if (selectedSizes.length > 0) result = result.filter((p) => p.sizes.some((s) => selectedSizes.includes(s)))
-    if (selectedColors.length > 0) result = result.filter((p) => p.colors.some((c) => selectedColors.includes(c.name)))
-    if (priceRange[0] > MIN_PRICE || priceRange[1] < MAX_PRICE) {
-      result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1])
-    }
-    if (showPromotions) result = result.filter((p) => p.isPromotion)
-    if (showNewArrivals) result = result.filter((p) => p.isNew)
+    if (selectedSizes.length > 0) result = result.filter(p => getProductSizes(p).some(s => selectedSizes.includes(s)))
+    if (selectedColors.length > 0) result = result.filter(p => getProductColors(p).some(c => selectedColors.includes(c.name)))
+    if (priceRange[0] > MIN_PRICE || priceRange[1] < MAX_PRICE) result = result.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1])
+    if (showPromotions) result = result.filter(p => p.isPromotion)
+    if (showNewArrivals) result = result.filter(p => p.isNew)
     switch (sortBy) {
       case "price-asc": result.sort((a, b) => a.price - b.price); break
       case "price-desc": result.sort((a, b) => b.price - a.price); break
@@ -97,168 +92,103 @@ export function ProductsContent() {
     return result
   }, [search, selectedCategories, selectedSizes, selectedColors, priceRange, showPromotions, showNewArrivals, sortBy])
 
+  const totalPages = Math.ceil(filteredProducts.length / PER_PAGE)
+  const effectivePage = page > totalPages ? 1 : page
+  const paginated = filteredProducts.slice((effectivePage - 1) * PER_PAGE, effectivePage * PER_PAGE)
+
   const clearFilters = () => {
     setSearch(""); setSelectedCategories([]); setSelectedSizes([]); setSelectedColors([])
-    setPriceRange([MIN_PRICE, MAX_PRICE]); setShowPromotions(false); setShowNewArrivals(false); setSortBy("recent")
+    setPriceRange([MIN_PRICE, MAX_PRICE]); setShowPromotions(false); setShowNewArrivals(false); setSortBy("recent"); setPage(1)
     router.replace(pathname, { scroll: false })
   }
 
   const hasActiveFilters = search || selectedCategories.length > 0 || selectedSizes.length > 0 || selectedColors.length > 0 || showPromotions || showNewArrivals || priceRange[0] > MIN_PRICE || priceRange[1] < MAX_PRICE
 
   const FiltersContent = ({ onApply }: { onApply?: () => void }) => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="mb-3 text-sm font-semibold">Categorias</h3>
-        <div className="space-y-2.5">
-          {categories.map((cat) => (
-            <div key={cat.slug} className="flex items-center gap-2.5">
-              <Checkbox id={`f-${cat.slug}`} checked={selectedCategories.includes(cat.slug)} onCheckedChange={(checked) => handleCategoryChange(cat.slug, !!checked)} />
-              <Label htmlFor={`f-${cat.slug}`} className="text-sm font-normal">{cat.name}</Label>
-            </div>
-          ))}
-        </div>
+    <div className="space-y-5">
+      {/* Search */}
+      <div><Label className="mb-1.5 block text-xs font-medium">Busca</Label><div className="relative"><Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(e) => handleSearchChange(e.target.value)} placeholder="Nome, cor, tag..." className="h-9 pl-8 text-xs" /></div></div>
+      {/* Categories */}
+      <div><Label className="mb-1.5 block text-xs font-medium">Categorias</Label><div className="space-y-1.5">
+        {categories.map(cat => (<div key={cat.slug} className="flex items-center gap-2"><Checkbox id={`cat-${cat.slug}`} checked={selectedCategories.includes(cat.slug)} onCheckedChange={(c) => handleCategoryChange(cat.slug, !!c)} /><label htmlFor={`cat-${cat.slug}`} className="text-xs">{cat.name}</label></div>))}
+      </div></div>
+      {/* Sizes */}
+      <div><Label className="mb-1.5 block text-xs font-medium">Tamanhos</Label><div className="flex flex-wrap gap-1.5">
+        {allSizes.map(s => (<Button key={s} variant={selectedSizes.includes(s) ? "default" : "outline"} size="sm" className="h-7 min-w-[36px] rounded-full text-[10px]" onClick={() => { setSelectedSizes(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]); setPage(1) }}>{s}</Button>))}
+      </div></div>
+      {/* Colors */}
+      <div><Label className="mb-1.5 block text-xs font-medium">Cores</Label><div className="flex flex-wrap gap-2">
+        {allColors.map(c => (<button key={c.name} className={`flex h-7 w-7 items-center justify-center rounded-full border-2 ${selectedColors.includes(c.name) ? "border-foreground ring-1 ring-foreground ring-offset-1" : "border-border"}`} style={{ backgroundColor: c.value }} onClick={() => { setSelectedColors(p => p.includes(c.name) ? p.filter(x => x !== c.name) : [...p, c.name]); setPage(1) }} title={c.name} />))}
+      </div></div>
+      {/* Price */}
+      <div><Label className="mb-1.5 block text-xs font-medium">Preço: {formatPrice(priceRange[0])} — {formatPrice(priceRange[1])}</Label><Slider min={MIN_PRICE} max={MAX_PRICE} step={5} value={priceRange} onValueChange={(v) => { setPriceRange(v); setPage(1) }} className="mt-2" /></div>
+      {/* Toggles */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2"><Checkbox id="promos" checked={showPromotions} onCheckedChange={(c) => { setShowPromotions(!!c); setPage(1) }} /><label htmlFor="promos" className="text-xs">Promoções</label></div>
+        <div className="flex items-center gap-2"><Checkbox id="new" checked={showNewArrivals} onCheckedChange={(c) => { setShowNewArrivals(!!c); setPage(1) }} /><label htmlFor="new" className="text-xs">Lançamentos</label></div>
       </div>
-      <div>
-        <h3 className="mb-3 text-sm font-semibold">Tamanhos</h3>
-        <div className="flex flex-wrap gap-2">
-          {sizes.map((size) => (
-            <Button key={size} variant={selectedSizes.includes(size) ? "default" : "outline"} size="sm" className="h-9 min-w-[44px] rounded-full touch-target" onClick={() => setSelectedSizes((p) => p.includes(size) ? p.filter((s) => s !== size) : [...p, size])}>
-              {size}
-            </Button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h3 className="mb-3 text-sm font-semibold">Cores</h3>
-        <div className="flex flex-wrap gap-2">
-          {colors.map((color) => (
-            <button key={color.name} className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all touch-target ${selectedColors.includes(color.name) ? "border-foreground ring-2 ring-foreground ring-offset-2" : "border-border"}`} style={{ backgroundColor: color.value }} onClick={() => setSelectedColors((p) => p.includes(color.name) ? p.filter((c) => c !== color.name) : [...p, color.name])} title={color.name} aria-label={`Cor ${color.name}${selectedColors.includes(color.name) ? " (selecionada)" : ""}`} />
-          ))}
-        </div>
-        {selectedColors.length > 0 && <p className="mt-1.5 text-xs text-muted-foreground">Selecionadas: {selectedColors.join(", ")}</p>}
-      </div>
-      <div>
-        <h3 className="mb-3 text-sm font-semibold">Faixa de preço</h3>
-        <Slider min={MIN_PRICE} max={MAX_PRICE} step={10} value={priceRange} onValueChange={(v) => setPriceRange(v as [number, number])} className="mt-2" />
-        <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-          <span>{formatPrice(priceRange[0])}</span>
-          <span>{formatPrice(priceRange[1])}</span>
-        </div>
-      </div>
-      <div>
-        <h3 className="mb-3 text-sm font-semibold">Filtros especiais</h3>
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-2.5">
-            <Checkbox id="fp" checked={showPromotions} onCheckedChange={(c) => setShowPromotions(!!c)} />
-            <Label htmlFor="fp" className="text-sm font-normal">Em promoção</Label>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <Checkbox id="fn" checked={showNewArrivals} onCheckedChange={(c) => setShowNewArrivals(!!c)} />
-            <Label htmlFor="fn" className="text-sm font-normal">Lançamentos</Label>
-          </div>
-        </div>
-      </div>
-      {/* Mobile: Apply button */}
-      {onApply && (
-        <Button className="w-full touch-target" onClick={onApply}>
-          Aplicar filtros ({filteredProducts.length})
-        </Button>
-      )}
-      {hasActiveFilters && (
-        <Button variant="outline" className="w-full" onClick={clearFilters}>
-          <X className="mr-2 h-4 w-4" /> Limpar filtros
-        </Button>
-      )}
+      {hasActiveFilters && <Button variant="outline" size="sm" className="w-full rounded-full text-xs" onClick={() => { clearFilters(); onApply?.() }}>Limpar filtros</Button>}
+      {onApply && <Button size="sm" className="w-full rounded-full text-xs" onClick={onApply}>Aplicar filtros</Button>}
     </div>
   )
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-      {/* Desktop Filters */}
-      <aside className="hidden w-64 shrink-0 lg:block">
-        <div className="sticky top-24 rounded-xl border bg-card p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            <h2 className="text-sm font-semibold">Filtros</h2>
-          </div>
-          <FiltersContent />
-        </div>
-      </aside>
+    <div className="flex gap-6 lg:gap-8">
+      {/* Desktop sidebar */}
+      <aside className="hidden w-[220px] shrink-0 lg:block"><div className="sticky top-24"><FiltersContent /></div></aside>
 
-      {/* Main */}
-      <div className="flex-1">
-        {/* Search + Sort */}
-        <div className="mb-4 flex items-center gap-2 sm:mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input type="search" inputMode="search" placeholder="Buscar produtos..." value={search} onChange={(e) => handleSearchChange(e.target.value)} autoComplete="off" enterKeyHint="search" className="h-10 pl-9 text-base sm:h-11" />
-          </div>
+      <div className="min-w-0 flex-1">
+        {/* Mobile filter bar */}
+        <div className="mb-3 flex items-center gap-2 sm:mb-4">
           <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-            <SheetTrigger asChild className="lg:hidden">
-              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 sm:h-11 sm:w-auto sm:gap-2 sm:px-4">
-                <SlidersHorizontal className="h-4 w-4" />
-                <span className="hidden sm:inline">Filtros</span>
-                {hasActiveFilters && <span className="flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[9px] text-background">!</span>}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[88vw] max-w-[380px]">
-              <SheetHeader><SheetTitle>Filtros</SheetTitle></SheetHeader>
-              <div className="mt-6 overflow-y-auto" style={{ maxHeight: "calc(100dvh - 120px)" }}>
-                <FiltersContent onApply={() => setMobileFiltersOpen(false)} />
-              </div>
-            </SheetContent>
+            <SheetTrigger asChild className="lg:hidden"><Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-[10px] sm:text-xs"><SlidersHorizontal className="h-3 w-3" /> Filtros {hasActiveFilters && <span className="flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[8px] text-background">!</span>}</Button></SheetTrigger>
+            <SheetContent side="left" className="w-[85vw] max-w-[320px] overflow-y-auto"><SheetHeader><SheetTitle>Filtros</SheetTitle></SheetHeader><div className="mt-4"><FiltersContent onApply={() => setMobileFiltersOpen(false)} /></div></SheetContent>
           </Sheet>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="hidden h-10 w-[150px] shrink-0 sm:flex sm:h-11">
-              <SelectValue placeholder="Ordenar" />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-            </SelectContent>
+          <div className="flex-1" />
+          <Select value={sortBy} onValueChange={(v) => { setSortBy(v); setPage(1) }}>
+            <SelectTrigger className="h-8 w-[140px] rounded-full text-[10px] sm:w-[160px] sm:text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>{sortOptions.map(o => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}</SelectContent>
           </Select>
         </div>
 
-        {/* Active Filters Tags */}
+        {/* Active filter tags */}
         {hasActiveFilters && (
-          <div className="mb-4 flex flex-wrap gap-1.5">
-            {search && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs">
-                &ldquo;{search}&rdquo;
-                <button onClick={() => handleSearchChange("")} className="ml-0.5 hover:text-destructive touch-target" aria-label="Remover busca"><X className="h-3 w-3" /></button>
-              </span>
-            )}
-            {selectedCategories.map((cat) => (
-              <span key={cat} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs">
-                {categories.find((c) => c.slug === cat)?.name || cat}
-                <button onClick={() => handleCategoryChange(cat, false)} className="ml-0.5 hover:text-destructive"><X className="h-3 w-3" /></button>
-              </span>
-            ))}
-            {selectedSizes.map((s) => (
-              <span key={s} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs">
-                {s} <button onClick={() => setSelectedSizes((p) => p.filter((x) => x !== s))}><X className="h-3 w-3" /></button>
-              </span>
-            ))}
-            <button onClick={clearFilters} className="text-xs text-muted-foreground underline hover:text-foreground">Limpar</button>
+          <div className="mb-3 flex flex-wrap gap-1">
+            {search && <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px]">&ldquo;{search}&rdquo;<button onClick={() => handleSearchChange("")} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button></span>}
+            {selectedCategories.map(cat => (<span key={cat} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px]">{categories.find(c => c.slug === cat)?.name || cat}<button onClick={() => handleCategoryChange(cat, false)}><X className="h-2.5 w-2.5" /></button></span>))}
+            {selectedSizes.map(s => (<span key={s} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px]">{s}<button onClick={() => setSelectedSizes(p => p.filter(x => x !== s))}><X className="h-2.5 w-2.5" /></button></span>))}
+            <button onClick={clearFilters} className="text-[10px] text-muted-foreground underline">Limpar</button>
           </div>
         )}
 
-        {/* Results */}
-        <p className="mb-3 text-xs text-muted-foreground sm:mb-4 sm:text-sm">
+        {/* Count */}
+        <p className="mb-2 text-[10px] text-muted-foreground sm:text-xs">
           {filteredProducts.length} {filteredProducts.length === 1 ? "produto" : "produtos"}
+          {totalPages > 1 && ` · pág. ${effectivePage}/${totalPages}`}
         </p>
 
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4">
-            {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/60">
-              <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />
+        {/* Grid */}
+        {paginated.length > 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 2xl:grid-cols-4">
+              {paginated.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
-            <h3 className="mt-4 font-serif text-base font-semibold sm:text-lg">Nenhum produto encontrado</h3>
-            <p className="mt-1.5 max-w-sm text-xs text-muted-foreground sm:text-sm">Tente ajustar os filtros ou buscar por outro termo.</p>
-            <Button variant="outline" size="sm" className="mt-4 rounded-full" onClick={clearFilters}>Limpar filtros</Button>
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-1.5">
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }) }} disabled={effectivePage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 7).map(p => (
+                  <Button key={p} variant={effectivePage === p ? "default" : "outline"} size="icon" className="h-8 w-8 rounded-full text-[10px]" onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }) }}>{p}</Button>
+                ))}
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }) }} disabled={effectivePage === totalPages}><ChevronRight className="h-4 w-4" /></Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-12 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/60"><ShoppingBag className="h-7 w-7 text-muted-foreground/50" /></div>
+            <h3 className="mt-3 font-serif text-sm font-semibold sm:text-base">Nenhum produto encontrado</h3>
+            <p className="mt-1 max-w-sm text-[10px] text-muted-foreground sm:text-xs">Tente ajustar os filtros.</p>
+            <Button variant="outline" size="sm" className="mt-3 rounded-full text-xs" onClick={clearFilters}>Limpar filtros</Button>
           </div>
         )}
       </div>

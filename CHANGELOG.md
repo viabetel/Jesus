@@ -1,205 +1,167 @@
-# Fashion Store — refatoração profunda
+# Fashion Store — v14 (em cima da v13)
 
-## O que foi feito nesta versão
+## Foco da rodada
+**Rodada 3 do plano "tudo": mídia estruturada com role + drag-drop + Drive importer.**
 
-Esta versão **não é apenas patch visual** — refatora a arquitetura de mídia
-e adiciona componentes que estavam pendentes (Quick View, hover image,
-auditoria de mídia, vídeo profissional, seções criativas).
+Trio fechou: rodada 1 (CRUD produtos), rodada 2 (upload), rodada 3 (mídia rica).
 
-### 1. Sistema real de mídia (`lib/data/media.ts`)
-
-Antes os produtos só tinham `images: string[]` + `video?: string`.
-Agora todo produto passa por `getProductMedia()` que devolve:
-
-```ts
-type ProductMedia = {
-  cover: string                   // imagem 0
-  hover?: string                  // imagem 1 — usada no hover do card
-  videoThumbnail?: string         // poster do vídeo (Drive thumbnail)
-  gallery: MediaItem[]            // todas as mídias com role
-}
-
-type MediaItem = {
-  type: "image" | "video"
-  role: "cover" | "hover" | "front" | "back" | "detail" | "model" | "lifestyle" | "video"
-  url: string
-  thumbnail?: string
-  alt: string
-}
+## Validação local
+```
+npm install        ✓
+npm run typecheck  ✓ sem erros
+npm run lint       ✓ 0 errors, 15 warnings (pré-existentes)
+npm run build      ✓ 5 rotas novas listadas
 ```
 
-A derivação é automática a partir dos campos antigos (backward compatible).
-A regra é: imagem 0 = cover, 1 = hover, 2 = front, 3 = back, 4 = detail,
-5+ = model/lifestyle. Vídeo entra como segundo item da galeria com `role:"video"`.
+## Validação em runtime (curl)
 
-Helpers expostos:
-- `getProductMedia(product)`
-- `getDuplicateUrls(media)` — para auditoria
-- `countMediaByType(media)`
-- `extractDriveId(url)`, `toDrivePreviewUrl(url)`, `getVideoThumbnail(url)`,
-  `isVideoUrl(url)`
+| Cenário | Resposta | OK |
+|---|---|---|
+| GET media sem auth | 401 | ✓ |
+| GET media com auth (sem Supabase) | 200 + lista vazia | ✓ |
+| POST add media sem url | 400 mensagem clara | ✓ |
+| POST add media sem Supabase | 503 NO_DB | ✓ |
+| POST reorder sem array | 400 | ✓ |
+| POST drive-import sem chave | 503 NO_DRIVE_KEY | ✓ |
+| POST drive-import sem folder | 400 | ✓ |
+| GET drive-import (status) | 200 `{configured: false}` | ✓ |
 
-### 2. Rota de auditoria de mídia (`/admin/midias`)
+## ✅ O que foi entregue
 
-Nova página com `noindex` que mostra, para cada produto:
+### 1. Tabela `product_media` no Supabase
+`supabase/schema-media.sql` (rodar UMA VEZ no SQL Editor):
+- Colunas: id, product_id (FK cascade), url, storage_path, kind (image/video),
+  role (cover/hover/front/back/detail/model/lifestyle/gallery/video),
+  alt, sort_order, width, height, timestamps
+- Trigger pra updated_at automático
+- RLS habilitado, policy de leitura pública (catálogo)
+- Índices em (product_id, sort_order) e (product_id, role)
 
-- nome, slug, id, categoria, contagem de imagens e vídeos
-- capa em destaque + hover
-- galeria completa, com `role` em badge sobre cada thumb
-- aviso de "URL repetida" (com ring amarelo na thumb)
-- avisos: sem capa / sem vídeo / sem hover / poucas imagens / URL repetida
-- filtros: todos / com pendências / sem vídeo
-- busca por nome, slug ou categoria
-- estatísticas (total, com vídeo, total de imagens, com pendências)
-- botão "Abrir produto" e "Abrir mídia em nova aba"
+### 2. Repository de mídia (`lib/services/media-repo.ts`)
+- `getProductMedia(productId)` — lista ordenada
+- `addMedia(input)` — adiciona com sort_order automático no fim
+- `updateMedia(id, patch)` — atualiza role, sortOrder, alt
+- `deleteMedia(id)` — remove
+- `reorderMedia(productId, orderedIds[])` — batch update de ordem
+- `migrateImagesToMedia(productId, images, video)` — idempotente,
+  popula a tabela a partir do array antigo
 
-### 3. Galeria de produto profissional (`components/products/product-gallery.tsx`)
+Todos retornam `RepoResult<T>` com erros tipados (NO_DB, NOT_FOUND, INVALID, DB).
 
-Substitui o iframe direto que estava no `product-details.tsx`:
+### 3. API routes
+- `GET    /api/admin/products/[id]/media` → lista
+- `POST   /api/admin/products/[id]/media` → adiciona
+- `PATCH  /api/admin/products/[id]/media/[mediaId]` → atualiza role/ordem/alt
+- `DELETE /api/admin/products/[id]/media/[mediaId]` → remove + apaga do storage
+- `POST   /api/admin/products/[id]/media/reorder` → reordenar batch
+- `POST   /api/admin/products/[id]/media/migrate` → migra do array images[]
+- `GET    /api/admin/products/[id]/drive-import` → checa se Drive configurado
+- `POST   /api/admin/products/[id]/drive-import` → importa pasta do Drive
 
-- vídeo abre **sob demanda** (clica → vira iframe Drive). Antes disso mostra
-  thumbnail real (Drive `thumbnail?id=ID&sz=w800`) com overlay "Assistir vídeo"
-- fallback se o thumbnail falhar (gradiente escuro com Play centralizado)
-- aviso de erro se Drive bloquear (mensagem para verificar permissão pública)
-- thumbnails verticais no desktop (lateral), horizontais no mobile
-- fullscreen lightbox para imagens
-- dots, contador, setas, badge de "VÍDEO" em thumbs
-- altura controlada: `max-h-[38dvh]` no mobile, `max-h-[50dvh]` em sm,
-  `aspect-[4/5] max-h-[600px]` no desktop
+Todas com auth via cookie `fs_admin`.
 
-### 4. Página de produto com layout harmônico no mobile
+### 4. Componente `MediaManager`
+`components/admin/media-manager.tsx` — substitui o `MediaUploader` da rodada 2:
 
-`components/products/product-details.tsx` foi reescrito:
+**Banner de migração** — se o produto tem `images[]` legado e tabela vazia,
+aparece banner amarelo "Migre pra estrutura nova" com botão.
 
-- imagem mobile compacta (38dvh), sem ocupar a tela inteira
-- thumbnails escondidas no desktop (vão pro lateral) e compactadas no mobile
-- descrição e detalhes em accordion (fechados por default)
-- bloco "Por que vestir essa peça" com cor accent
-- CTA sticky mobile usa `grid-cols-[auto_1fr_1fr]` com `min-w-0` e `truncate`
-  em todos os labels — testado para 320/360/375/390/414/430px sem cortar texto
-- breadcrumb com `flex-wrap` para evitar overflow
-- todos os textos com `break-words` e `min-w-0` onde necessário
+**Drive importer** (sanfona retrátil):
+- Campo pra ID/URL da pasta
+- Detecta automaticamente se `GOOGLE_DRIVE_API_KEY` está configurada
+- Se não, mostra alerta com instrução
+- Importa até 30 arquivos por vez, copia pro nosso Storage,
+  registra na tabela com role automática (cover/hover/gallery/video)
 
-### 5. Promoções compactas no mobile
+**Upload de imagens**:
+- Drag & drop ou clique
+- Múltiplos arquivos de uma vez
+- Cada upload já registra na tabela (não precisa salvar produto)
 
-`components/home/promotions-section.tsx` agora tem **dois layouts distintos**
-(não responsivos por classes; renderizam blocos diferentes):
+**Grid de imagens**:
+- Drag & drop nativo (HTML5) pra reordenar — visual ring verde no destino
+- Badge colorido por role (capa verde, hover azul, frente roxo, etc)
+- Dropdown pra mudar role (overlay no hover do mouse)
+- Botão remover com confirmação (apaga do storage também)
+- **Cover e Hover** são únicos: marcar uma imagem como cover desmarca
+  qualquer outra que tinha esse role
 
-- **mobile**: card horizontal `grid-cols-[120px_1fr]` — imagem pequena à
-  esquerda, conteúdo compacto à direita. Não vira "blocão de tela inteira".
-- **desktop/tablet**: layout horizontal premium 38%/62% com hover zoom,
-  badge -X% OFF, descrição line-clamp, dois CTAs.
+**Vídeo**: dropzone separado, único arquivo, mesmo fluxo.
 
-### 6. Mural Fashion Store (substitui feed fake)
+### 5. Drive importer (`lib/services/drive-import.ts`)
+- `importDriveFolder({ productId, folderInput, limit })`
+  - Aceita ID puro ou URL completa do Drive
+  - Lista arquivos via Drive API v3 com `key=GOOGLE_DRIVE_API_KEY`
+  - Filtra por MIME (image/video permitidos)
+  - Faz download via `alt=media`
+  - Faz upload pro Supabase Storage (passa pelo `uploadProductMedia`)
+  - Registra na tabela `product_media` com role automática
+  - Retorna `{ imported, skipped, errors[] }`
+- `isDriveConfigured()` checa se a env existe
 
-`components/home/instagram-section.tsx` reescrito como **Mural Fashion Store**:
+**Importante:** sem `GOOGLE_DRIVE_API_KEY`, retorna `503 NO_DRIVE_KEY` com
+mensagem clara. A pasta do Drive precisa estar pública ou compartilhada com
+a chave.
 
-- header tipo perfil de Instagram (avatar com gradient ring, @ da loja)
-- post em destaque (estilo card de Instagram com ações fake — Heart, Comment,
-  Send, Bookmark — e legenda)
-- grid curado de 5 thumbnails com overlay e ícone do Instagram no hover
-- CTA inferior "Marque @fashion__store.99 nos seus posts"
-- nada de iframe, nada de "feed fake genérico"
+### 6. Página do produto pública agora lê `product_media`
+`/produto/[slug]` faz SSR que:
+- Carrega o produto via `getProductBySlug`
+- Carrega mídia estruturada via `getProductMedia(product.id)`
+- Se houver mídia na tabela: monta `images[]` na ordem (cover → hover → resto
+  pela `sortOrder`) e passa pro `ProductDetails`
+- Se não: usa o `images[]` legado do produto (compat total)
 
-### 7. ProductCard premium
+Resultado: editar mídia no admin reflete imediatamente no site.
 
-`components/product-card.tsx`:
+## Status do projeto
 
-- **hover image real**: cover esmaece e segunda imagem aparece (apenas em sm+)
-- **Quick View** no desktop (botão Eye no canto superior direito do hover)
-- **mobile pequeno (≤ 379px)**: CTA único "Ver produto" — sem dois botões
-  espremidos lado a lado
-- **mobile médio (≥ 380px)**: dois botões com `min-w-0`, `truncate`,
-  `flex-1`, `shrink-0` em ícones
-- **tamanhos/cores escondidos em ≤ 379px** — voltam em ≥ 380px
-- categoria escondida em ≤ 379px
-- badge com `max-w-[calc(100%-3rem)] truncate`
-- selo "Vídeo" na canto inferior esquerdo se o produto tiver vídeo
+| Frente | Status |
+|---|---|
+| Vitrine | bom |
+| Página produto | usa mídia da tabela |
+| Carrinho | bom |
+| Pedidos | persistência real (Supabase) |
+| Admin produtos | CRUD completo |
+| Admin mídia | upload + role + drag-drop + Drive importer |
+| Variantes | CRUD inline |
+| Estoque | reservas funcionais |
+| Drive como CDN | substituído pelo Storage do Supabase ao importar |
 
-### 8. Quick View modal (`components/quick-view.tsx`)
+## Setup pra ativar
 
-Modal compacto que abre só no desktop (no mobile o card vai para a página
-do produto direto). Permite escolher tamanho e cor, adicionar à sacola e
-ir para o WhatsApp sem sair da página de catálogo.
-
-### 9. Hero refinado
-
-Botões empilham em coluna em telas muito pequenas (`< 380px`), em linha a
-partir disso. Cada botão tem `min-w-0` e `truncate` no label, ícones com
-`shrink-0`. Texto principal com `break-words`.
-
-### 10. Duas seções criativas novas
-
-- **`components/home/drops-section.tsx`** — *Drops de Fé*: 3 coleções por
-  tema cristão (Mensagem, Movimento, Renovação), cada uma com mosaico de
-  3 capas e CTA "Ver drop"
-- **`components/home/stamp-detail-section.tsx`** — *Estampa em detalhe*:
-  seção dark com closes da arte das camisetas. Pega o item de papel
-  `"detail"` da galeria (ou cai no índice 4) para mostrar a textura/traço
-
-A home foi atualizada (`app/page.tsx`) para incluir as duas novas seções.
-
-### 11. Correções técnicas
-
-- removido `typescript.ignoreBuildErrors` do `next.config.mjs`
-- adicionado `drive.google.com` ao `remotePatterns` (necessário para os
-  thumbnails de vídeo)
-- script de lint trocado de `eslint .` (que quebrava — eslint não estava
-  instalado) para `next lint`
-- `eslint` e `eslint-config-next` adicionados em devDependencies
-- `.eslintrc.json` criado com config mínima do Next
-- novo script `npm run typecheck`
-
-## O que ainda precisa ser feito (pelo Vercel / Claude Code)
-
-Não consegui rodar `npm install` + `npm run build` neste ambiente
-(timeouts e o ZIP não vinha com `node_modules`). **Antes do deploy**, rodar:
-
-```bash
-npm install
-npm run typecheck   # opcional mas recomendado
-npm run lint        # vai reclamar de coisas — corrigir
-npm run build       # tem que passar
-```
-
-Se houver erros, eles serão **erros reais** agora, porque
-`ignoreBuildErrors` foi removido. Não esconda com flag — corrija.
+1. Rode `supabase/schema-media.sql` no SQL Editor (depois dos outros 3
+   schemas das rodadas anteriores)
+2. (Opcional) Pra usar o Drive importer:
+   - Console GCP → Library → Google Drive API → habilitar
+   - Credentials → Create credentials → API key
+   - Vercel → Settings → Environment Variables:
+     `GOOGLE_DRIVE_API_KEY=AIzaSy...`
+3. Vai em `/admin/produtos/[id]`, na seção Mídia:
+   - Se o produto tem imagens legadas, clica "Migrar agora" no banner
+   - Faça upload, marque roles, arraste pra reordenar
 
 ## Arquivos novos
-
-- `lib/data/media.ts`
-- `components/quick-view.tsx`
-- `components/products/product-gallery.tsx`
-- `components/home/drops-section.tsx`
-- `components/home/stamp-detail-section.tsx`
-- `app/admin/midias/page.tsx`
-- `app/admin/midias/media-audit-content.tsx`
-- `.eslintrc.json`
-- `CHANGELOG.md` (este arquivo)
+- `supabase/schema-media.sql`
+- `lib/services/media-repo.ts`
+- `lib/services/drive-import.ts`
+- `app/api/admin/products/[id]/media/route.ts`
+- `app/api/admin/products/[id]/media/[mediaId]/route.ts`
+- `app/api/admin/products/[id]/media/reorder/route.ts`
+- `app/api/admin/products/[id]/media/migrate/route.ts`
+- `app/api/admin/products/[id]/drive-import/route.ts`
+- `components/admin/media-manager.tsx`
 
 ## Arquivos alterados
+- `app/admin/produtos/product-form.tsx` — usa MediaManager (substituiu MediaUploader)
+- `app/produto/[slug]/page.tsx` — mescla mídia da tabela com produto antes de renderizar
+- `lib/data/media.ts` — adicionado `buildGalleryFromDb` e `buildGallerySmart`
 
-- `app/page.tsx` — incluiu DropsSection + StampDetailSection
-- `app/globals.css` — adicionou `.has-sticky-cta`
-- `components/product-card.tsx` — hover image, Quick View, mobile compacto
-- `components/products/product-details.tsx` — usa nova galeria, sticky CTA
-  com grid seguro, accordion, "Por que vestir"
-- `components/home/promotions-section.tsx` — dois layouts (mobile / desktop)
-- `components/home/instagram-section.tsx` — virou Mural Fashion Store
-- `components/home/hero-section.tsx` — botões empilham em mobile pequeno
-- `next.config.mjs` — drive.google.com, ignoreBuildErrors removido
-- `package.json` — lint via next lint, eslint instalado, typecheck script
+## ❌ Não entrou nesta rodada (intencional)
 
-## O que não foi feito (intencional)
-
-- **não migrei `lib/data/products.ts` para usar o campo `media`**. Isso seria
-  invasivo e inseguro sem ver as imagens reais (não dá para saber qual é
-  capa, qual é detalhe, etc só pela URL do Drive). O sistema é
-  retrocompatível: a função `getProductMedia` constrói o `media` a partir do
-  formato antigo. Quando você quiser, cada produto pode passar a ter um
-  campo `media: ProductMedia` que sobrescreve a derivação automática. A
-  estrutura está pronta.
-- **não troquei Drive por Cloudinary / Vercel Blob**. Recomendo fortemente
-  para produção, mas isso depende de você criar a conta e fazer upload. O
-  código já aceita qualquer URL pública (sem assumir que é Drive) — basta
-  alterar as URLs em `products.ts`.
+- **Edição de mídia em `/admin/midias`** — continua read-only de auditoria.
+  Toda edição acontece em `/admin/produtos/[id]`, que faz mais sentido (mídia
+  pertence ao produto, não a um inventário separado).
+- **Importer com OAuth pra pastas privadas** — pasta tem que estar pública
+  ou compartilhada com a API key. OAuth seria fluxo bem mais complexo.
+- **Limpeza de arquivos órfãos** — se você deleta uma mídia da tabela mas o
+  storage falha, o arquivo fica. Vale um cron job no futuro.

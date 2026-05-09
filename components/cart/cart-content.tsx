@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { useCart } from "@/contexts/cart-context"
 import { useAuth } from "@/contexts/auth-context"
+import { getVariantSku } from "@/lib/data/products"
 import {
   WHATSAPP_NUMBER,
   createWhatsAppLink,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/whatsapp"
 import { formatPrice } from "@/lib/format"
 import { formatPhone, isValidPhone, isValidEmail } from "@/lib/phone"
+import { toast } from "sonner"
 
 export function CartContent() {
   const { items, removeItem, updateQuantity, getSubtotal, clearCart } = useCart()
@@ -59,45 +61,124 @@ export function CartContent() {
     setCustomerWhatsapp(formatPhone(value))
   }
 
-  const handleFinalize = () => {
-    const cartItems = items.map((item) => ({
-      name: item.product.name,
-      size: item.size,
-      color: item.color.name,
-      quantity: item.quantity,
-      price: item.product.price,
-    }))
+  const [submitting, setSubmitting] = useState(false)
 
-    const order = addOrder({
-      items: cartItems.map((item) => ({
-        productName: item.name,
-        size: item.size,
-        color: item.color,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      total: subtotal,
-      address: address || undefined,
-      observation: observation || undefined,
-    })
+  const handleFinalize = async () => {
+    if (submitting) return
+    setSubmitting(true)
+    try {
+      // Payload mínimo: o servidor vai recalcular preço/total/cor/tamanho.
+      // O cliente NUNCA mais envia price ou total — review apontou que isso
+      // era manipulável.
+      const apiItems = items
+        .map((item) => {
+          const sku = getVariantSku(item.product, item.color.name, item.size)
+          if (!sku) return null
+          return {
+            productId: item.product.id,
+            variantSku: sku,
+            quantity: item.quantity,
+          }
+        })
+        .filter((x): x is { productId: string; variantSku: string; quantity: number } => x !== null)
 
-    setLastOrderNumber(order.orderNumber)
+      if (apiItems.length === 0) {
+        toast.error("Nenhum item válido na sacola.")
+        setSubmitting(false)
+        return
+      }
 
-    const message = formatCartMessage(
-      cartItems,
-      {
-        name: customerName,
-        whatsapp: customerWhatsapp,
-        email: customerEmail,
+      // 1) Cria pedido no servidor (fonte da verdade pro admin)
+      const res = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName,
+          customerWhatsapp,
+          customerEmail,
+          items: apiItems,
+          address: address || undefined,
+          observation: observation || undefined,
+        }),
+      })
+
+      if (!res.ok) {
+        // Mapeia os códigos de erro do server pra mensagens amigáveis
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string | { code?: string; sku?: string; available?: number; requested?: number; message?: string }
+        }
+        let msg = "Erro ao registrar pedido."
+        const err = data.error
+        if (typeof err === "object" && err !== null) {
+          if (err.code === "INSUFFICIENT_STOCK" && err.sku) {
+            msg = `Estoque insuficiente para ${err.sku}: pedido ${err.requested}, disponível ${err.available}.`
+          } else if (err.code === "PRODUCT_NOT_FOUND" || err.code === "VARIANT_NOT_FOUND") {
+            msg = "Um item da sacola não existe mais. Remova e tente novamente."
+          } else if (err.message) {
+            msg = err.message
+          }
+        } else if (typeof err === "string") {
+          msg = err
+        }
+        toast.error(msg)
+        setSubmitting(false)
+        return
+      }
+
+      // O servidor retorna o pedido completo, com items recalculados
+      type ServerOrder = {
+        id: string
+        number: string
+        items: Array<{ productName: string; size: string; color: string; quantity: number; price: number }>
+        subtotal: number
+        total: number
+      }
+      const serverOrder = (await res.json()) as ServerOrder
+
+      // 2) Backup local pro histórico do cliente — usa items canônicos do servidor
+      addOrder({
+        items: serverOrder.items.map((i) => ({
+          productName: i.productName,
+          size: i.size,
+          color: i.color,
+          quantity: i.quantity,
+          price: i.price,
+        })),
+        total: serverOrder.total,
         address: address || undefined,
         observation: observation || undefined,
-      },
-      subtotal,
-      order.orderNumber
-    )
+      })
 
-    window.open(createWhatsAppLink(WHATSAPP_NUMBER, message), "_blank")
-    setShowConfirmDialog(true)
+      setLastOrderNumber(serverOrder.number)
+
+      // 3) Mensagem do WhatsApp usa items canônicos e total do servidor
+      const message = formatCartMessage(
+        serverOrder.items.map((i) => ({
+          name: i.productName,
+          size: i.size,
+          color: i.color,
+          quantity: i.quantity,
+          price: i.price,
+        })),
+        {
+          name: customerName,
+          whatsapp: customerWhatsapp,
+          email: customerEmail,
+          address: address || undefined,
+          observation: observation || undefined,
+        },
+        serverOrder.total,
+        serverOrder.number
+      )
+
+      window.open(createWhatsAppLink(WHATSAPP_NUMBER, message), "_blank")
+      setShowConfirmDialog(true)
+    } catch (err) {
+      console.error(err)
+      toast.error("Falha ao enviar pedido. Tente novamente.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleConfirmSent = () => {
@@ -136,11 +217,11 @@ export function CartContent() {
           {items.map((item) => (
             <div
               key={`${item.product.id}-${item.size}-${item.color.name}`}
-              className="flex gap-4 rounded-xl border bg-card p-4 transition-shadow hover:shadow-sm"
+              className="flex min-w-0 gap-3 rounded-xl border bg-card p-3 transition-shadow hover:shadow-sm sm:gap-4 sm:p-4"
             >
               <Link
                 href={`/produto/${item.product.slug}`}
-                className="relative h-28 w-22 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-32 sm:w-24"
+                className="relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-32 sm:w-24"
               >
                 <Image
                   src={item.product.images[0] || "/brand/placeholder-product.svg"}
@@ -151,56 +232,62 @@ export function CartContent() {
                 />
               </Link>
 
-              <div className="flex flex-1 flex-col justify-between">
-                <div>
+              <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+                <div className="min-w-0">
                   <Link
                     href={`/produto/${item.product.slug}`}
-                    className="font-serif text-[15px] font-semibold leading-snug transition-colors hover:text-muted-foreground"
+                    className="line-clamp-2 break-words font-serif text-sm font-semibold leading-snug transition-colors hover:text-muted-foreground sm:text-[15px]"
                   >
                     {item.product.name}
                   </Link>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Tamanho: {item.size} · Cor: {item.color.name}
+                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">
+                    Tam: {item.size} · {item.color.name}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold sm:hidden">
+                    {formatPrice(item.product.price * item.quantity)}
                   </p>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between">
-                  {/* Quantity — min 44px touch targets */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {/* Quantity */}
                   <div className="flex items-center gap-1">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9 shrink-0 rounded-full touch-target"
+                      className="h-8 w-8 shrink-0 rounded-full sm:h-9 sm:w-9"
                       onClick={() =>
                         updateQuantity(item.product.id, item.size, item.color.name, item.quantity - 1)
                       }
+                      aria-label="Diminuir"
                     >
-                      <Minus className="h-3.5 w-3.5" />
+                      <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </Button>
-                    <span className="min-w-[28px] text-center text-sm font-medium">
+                    <span className="min-w-[24px] text-center text-sm font-medium">
                       {item.quantity}
                     </span>
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9 shrink-0 rounded-full touch-target"
+                      className="h-8 w-8 shrink-0 rounded-full sm:h-9 sm:w-9"
                       onClick={() =>
                         updateQuantity(item.product.id, item.size, item.color.name, item.quantity + 1)
                       }
+                      aria-label="Aumentar"
                     >
-                      <Plus className="h-3.5 w-3.5" />
+                      <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </Button>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">
+                    <span className="hidden text-sm font-semibold sm:inline">
                       {formatPrice(item.product.price * item.quantity)}
                     </span>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive touch-target"
+                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive sm:h-9 sm:w-9"
                       onClick={() => removeItem(item.product.id, item.size, item.color.name)}
+                      aria-label="Remover"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -344,10 +431,10 @@ export function CartContent() {
             size="lg"
             className="w-full gap-2 rounded-xl bg-[#25D366] py-6 text-base font-semibold text-white hover:bg-[#1DA851] active:scale-[0.98] transition-transform touch-target"
             onClick={handleFinalize}
-            disabled={!isFormValid}
+            disabled={!isFormValid || submitting}
           >
             <MessageCircle className="h-5 w-5" />
-            Finalizar pelo WhatsApp
+            {submitting ? "Enviando..." : "Finalizar pelo WhatsApp"}
           </Button>
         </div>
       </div>
