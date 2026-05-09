@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, type ReactNode } from "react"
 import Link from "next/link"
 import { Heart, ShoppingBag, MessageCircle, Minus, Plus, Ruler, Truck, RefreshCw, Check, AlertCircle, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -182,14 +182,54 @@ export function ProductDetails({ product }: { product: Product }) {
 
           {/* Accordions */}
           <div className="space-y-0 border-t">
-            <button onClick={() => setDescOpen(!descOpen)} className="flex w-full items-center justify-between py-2.5 text-left text-sm font-medium">Descrição <ChevronDown className={cn("h-4 w-4 transition-transform", descOpen && "rotate-180")} /></button>
+            {/* Description */}
+            <button onClick={() => setDescOpen(!descOpen)} className="flex w-full items-center justify-between py-3 text-left text-sm font-medium">Descrição <ChevronDown className={cn("h-4 w-4 transition-transform", descOpen && "rotate-180")} /></button>
             {descOpen && <p className="pb-3 text-xs leading-relaxed text-muted-foreground">{product.description}</p>}
-            <button onClick={() => setDetailsOpen(!detailsOpen)} className="flex w-full items-center justify-between border-t py-2.5 text-left text-sm font-medium">Detalhes <ChevronDown className={cn("h-4 w-4 transition-transform", detailsOpen && "rotate-180")} /></button>
+
+            {/* Details */}
+            <button onClick={() => setDetailsOpen(!detailsOpen)} className="flex w-full items-center justify-between border-t py-3 text-left text-sm font-medium">Detalhes do produto <ChevronDown className={cn("h-4 w-4 transition-transform", detailsOpen && "rotate-180")} /></button>
             {detailsOpen && (
-              <ul className="space-y-1 pb-3">
+              <ul className="space-y-1.5 pb-3">
                 {product.details.map((d, i) => (<li key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground"><Check className="h-3 w-3 text-[#C2A87D]" /> {d}</li>))}
               </ul>
             )}
+
+            {/* Composition & Care */}
+            <AccordionItem title="Composição e cuidados">
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
+                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> 100% algodão premium</li>
+                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Lavar à máquina (30°C)</li>
+                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Não usar alvejante</li>
+                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Secar à sombra</li>
+                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Passar em temperatura média</li>
+              </ul>
+            </AccordionItem>
+
+            {/* Size Guide */}
+            <AccordionItem title="Guia de medidas">
+              <div className="space-y-2 pb-1">
+                <table className="w-full text-[10px] sm:text-xs">
+                  <thead><tr className="border-b text-left text-muted-foreground"><th className="py-1 pr-4 font-medium">Tam</th><th className="py-1 pr-4 font-medium">Largura</th><th className="py-1 pr-4 font-medium">Comprimento</th></tr></thead>
+                  <tbody>
+                    <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">P</td><td className="py-1.5 pr-4 text-muted-foreground">50cm</td><td className="py-1.5 text-muted-foreground">68cm</td></tr>
+                    <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">M</td><td className="py-1.5 pr-4 text-muted-foreground">52cm</td><td className="py-1.5 text-muted-foreground">70cm</td></tr>
+                    <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">G</td><td className="py-1.5 pr-4 text-muted-foreground">54cm</td><td className="py-1.5 text-muted-foreground">72cm</td></tr>
+                    <tr><td className="py-1.5 pr-4 font-medium">GG</td><td className="py-1.5 pr-4 text-muted-foreground">58cm</td><td className="py-1.5 text-muted-foreground">74cm</td></tr>
+                  </tbody>
+                </table>
+                <Link href="/guia-de-medidas" className="inline-flex items-center gap-1 text-[10px] font-medium text-foreground underline underline-offset-2">Ver guia completo <Ruler className="h-3 w-3" /></Link>
+              </div>
+            </AccordionItem>
+
+            {/* How to buy */}
+            <AccordionItem title="Como comprar">
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <p>1. Escolha cor e tamanho</p>
+                <p>2. Adicione à sacola ou clique em <strong className="text-foreground">Comprar pelo WhatsApp</strong></p>
+                <p>3. Confirme dados, endereço e forma de pagamento</p>
+                <p>4. Receba em casa ou retire em Juiz de Fora/MG</p>
+              </div>
+            </AccordionItem>
           </div>
 
           {/* Shipping */}
@@ -220,4 +260,17 @@ export function ProductDetails({ product }: { product: Product }) {
 
 function X({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+}
+
+// Simple accordion item for product info sections
+function AccordionItem({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between border-t py-3 text-left text-sm font-medium">
+        {title} <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && <div className="pb-3">{children}</div>}
+    </>
+  )
 }

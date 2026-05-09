@@ -189,18 +189,28 @@ export default function AdminProdutosPage() {
                 <tbody className="divide-y divide-neutral-900">
                   {paginated.map(p => {
                     const totalStock = p.variants.filter(v => v.active).reduce((s, v) => s + v.stock, 0)
+                    const alerts: string[] = []
+                    if (!p.images || p.images.length === 0) alerts.push("Sem imagem")
+                    if (!p.variants || p.variants.length === 0) alerts.push("Sem variantes")
+                    if (totalStock === 0 && p.status === "ativo") alerts.push("Sem estoque")
+                    if (!p.description || p.description.length < 10) alerts.push("Sem descrição")
                     return (
                       <tr key={p.id} className="hover:bg-neutral-900/50">
                         <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            {p.images[0] && (
-                              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-neutral-900">
-                                <Image src={p.images[0]} alt="" fill className="object-cover" sizes="40px" unoptimized />
-                              </div>
-                            )}
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md bg-neutral-900 border border-neutral-800">
+                              {p.images?.[0] ? <Image src={p.images[0]} alt="" fill className="object-cover" sizes="44px" unoptimized /> : <div className="flex h-full w-full items-center justify-center text-neutral-700"><AlertCircle className="h-4 w-4" /></div>}
+                            </div>
                             <div className="min-w-0">
-                              <p className="truncate font-medium">{p.name}</p>
-                              <p className="truncate text-[10px] text-neutral-500">{p.slug}</p>
+                              <p className="truncate text-[13px] font-medium">{p.name}</p>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-neutral-500">{p.slug}</span>
+                                {alerts.length > 0 && (
+                                  <span className="flex items-center gap-0.5 rounded bg-yellow-900/30 px-1 py-px text-[8px] font-medium text-yellow-400">
+                                    <AlertCircle className="h-2 w-2" /> {alerts.length}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
