@@ -3,17 +3,17 @@ import Image from "next/image"
 import { Percent, MessageCircle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProductCard } from "@/components/product-card"
-import { getPromotionProducts, getTotalStock } from "@/lib/data/products"
+import type { Product } from "@/lib/data/products"
+import { getTotalStock } from "@/lib/data/products"
 import { formatPrice, getDiscountPercent } from "@/lib/format"
 import { WHATSAPP_NUMBER, createWhatsAppLink, formatProductMessage } from "@/lib/whatsapp"
 
-export function PromotionsSection() {
-  const promos = getPromotionProducts()
-  if (promos.length === 0) return null
+export function PromotionsSection({ products: promotionProducts }: { products: Product[] }) {
+  if (promotionProducts.length === 0) return null
 
   // Single product: compact featured offer
-  if (promos.length === 1) {
-    const p = promos[0]
+  if (promotionProducts.length === 1) {
+    const p = promotionProducts[0]
     const discount = p.originalPrice ? getDiscountPercent(p.originalPrice, p.price) : 0
 
     return (
@@ -84,7 +84,7 @@ export function PromotionsSection() {
           <h2 className="font-serif text-lg font-bold sm:text-2xl">Promoções</h2>
         </div>
         <div className="-mx-3 mt-5 flex gap-3 overflow-x-auto px-3 pb-3 scrollbar-hide sm:mx-0 sm:mt-8 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-3 lg:grid-cols-4">
-          {promos.map((product) => (
+          {promotionProducts.map((product) => (
             <div key={product.id} className="w-[72vw] max-w-[280px] shrink-0 sm:w-auto sm:max-w-none">
               <div className="rounded-xl bg-card text-card-foreground"><ProductCard product={product} /></div>
             </div>

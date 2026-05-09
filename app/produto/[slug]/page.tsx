@@ -43,6 +43,11 @@ export default async function ProductPage({ params }: Props) {
   const product = await getProductBySlug(slug)
   if (!product) notFound()
 
+  // Block non-active products from public access
+  if (product.status !== "ativo") notFound()
+
+  const allProducts = await getAllProducts()
+
   // Carrega mídia estruturada da tabela (rodada 3) — se existir, sobrescreve images/video
   const dbMedia = await getProductMedia(product.id).catch(() => [])
 
@@ -75,7 +80,7 @@ export default async function ProductPage({ params }: Props) {
       <main className="min-h-dvh py-4 pb-20 sm:pb-6 lg:py-10">
         <div className="mx-auto max-w-6xl px-4">
           <ProductDetails product={displayProduct} />
-          <RelatedProducts currentProduct={displayProduct} />
+          <RelatedProducts currentProduct={displayProduct} allProducts={allProducts} />
 
           <script
             type="application/ld+json"

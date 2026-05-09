@@ -4,14 +4,15 @@
  * IMPORTANTE:
  *  - Preço, total, nome, cor, tamanho NUNCA são confiáveis no payload do
  *    cliente. Esta camada recebe APENAS productId + variantSku + quantity e
- *    recalcula tudo lendo de `lib/data/products.ts` (fonte de verdade).
+ *    recalcula tudo lendo do Supabase via products-repo (fonte de verdade).
  *  - Estoque é validado contra a soma de reservas ativas. Se não couber, o
  *    pedido é recusado.
  *  - Quando o pedido é criado, reservas são lançadas (state=reserved).
  *    Quando vira "entregue", viram consumed. Quando "cancelado", released.
  */
 
-import { products, type Product, type ProductVariant } from "@/lib/data/products"
+import type { Product, ProductVariant } from "@/lib/data/products"
+import { getProductById } from "@/lib/services/products-repo"
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase"
 
 // ===== Tipos =====
@@ -74,11 +75,11 @@ export type CreateOrderResult =
 
 // ===== Resolução de variante (server-side) =====
 
-function findProductVariant(
+async function findProductVariant(
   productId: string,
   variantSku: string
-): { product: Product; variant: ProductVariant } | null {
-  const product = products.find((p) => p.id === productId)
+): Promise<{ product: Product; variant: ProductVariant } | null> {
+  const product = await getProductById(productId)
   if (!product) return null
   const variant = product.variants.find((v) => v.sku === variantSku && v.active)
   if (!variant) return null
@@ -106,7 +107,7 @@ async function getAvailableStock(variant: ProductVariant): Promise<number> {
 }
 
 export async function getVariantAvailableStock(productId: string, variantSku: string): Promise<number> {
-  const found = findProductVariant(productId, variantSku)
+  const found = await findProductVariant(productId, variantSku)
   if (!found) return 0
   return getAvailableStock(found.variant)
 }
@@ -212,15 +213,15 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     if (!it || typeof it.quantity !== "number" || it.quantity < 1) {
       return { ok: false, error: { code: "INVALID_INPUT", message: "Item com quantidade inválida." } }
     }
-    const found = findProductVariant(it.productId, it.variantSku)
+    const found = await findProductVariant(it.productId, it.variantSku)
     if (!found) {
-      // diferenciamos os dois erros: produto não existe vs variante não existe
-      const productExists = products.some((p) => p.id === it.productId)
+      // Check if the product exists but variant doesn't
+      const product = await getProductById(it.productId)
       return {
         ok: false,
-        error: productExists
-          ? { code: "VARIANT_NOT_FOUND", sku: it.variantSku }
-          : { code: "PRODUCT_NOT_FOUND", sku: it.variantSku },
+        error: product
+          ? { code: "VARIANT_NOT_FOUND" as const, sku: it.variantSku }
+          : { code: "PRODUCT_NOT_FOUND" as const, sku: it.variantSku },
       }
     }
     const { product, variant } = found

@@ -11,16 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { ProductCard } from "@/components/product-card"
-import { products, categories, getProductColors, getProductSizes, getTotalStock, type ProductCategory } from "@/lib/data/products"
+import { categories, getProductColors, getProductSizes, getTotalStock, type ProductCategory, type Product } from "@/lib/data/products"
 import { formatPrice } from "@/lib/format"
 
 // Derive filter options from real product data
-const allSizes = [...new Set(products.flatMap(p => getProductSizes(p)))]
-const allColors = (() => {
-  const seen = new Map<string, string>()
-  products.forEach(p => getProductColors(p).forEach(c => { if (!seen.has(c.name)) seen.set(c.name, c.value) }))
-  return [...seen.entries()].map(([name, value]) => ({ name, value }))
-})()
 const sortOptions = [
   { value: "recent", label: "Mais recentes" },
   { value: "price-asc", label: "Menor preço" },
@@ -29,10 +23,17 @@ const sortOptions = [
 ]
 const MIN_PRICE = 0; const MAX_PRICE = 200; const PER_PAGE = 24
 
-export function ProductsContent() {
+export function ProductsContent({ products }: { products: Product[] }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
+
+  const allSizes = useMemo(() => [...new Set(products.flatMap(p => getProductSizes(p)))], [products])
+  const allColors = useMemo(() => {
+    const seen = new Map<string, string>()
+    products.forEach(p => getProductColors(p).forEach(c => { if (!seen.has(c.name)) seen.set(c.name, c.value) }))
+    return [...seen.entries()].map(([name, value]) => ({ name, value }))
+  }, [products])
 
   const [search, setSearch] = useState(searchParams.get("busca") || "")
   const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams.get("categoria") ? [searchParams.get("categoria")!] : [])

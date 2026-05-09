@@ -2,10 +2,9 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProductCard } from "@/components/product-card"
-import { getNewProducts } from "@/lib/data/products"
+import type { Product } from "@/lib/data/products"
 
-export function NewArrivalsSection() {
-  const newProducts = getNewProducts().slice(0, 4)
+export function NewArrivalsSection({ products: newProducts }: { products: Product[] }) {
   if (newProducts.length === 0) return null
 
   return (

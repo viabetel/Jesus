@@ -1,10 +1,10 @@
 import { ProductCard } from "@/components/product-card"
-import { products, type Product } from "@/lib/data/products"
+import type { Product } from "@/lib/data/products"
 
-type RelatedProductsProps = { currentProduct: Product }
+type RelatedProductsProps = { currentProduct: Product; allProducts: Product[] }
 
-export function RelatedProducts({ currentProduct }: RelatedProductsProps) {
-  const related = products
+export function RelatedProducts({ currentProduct, allProducts }: RelatedProductsProps) {
+  const related = allProducts
     .filter((p) => p.id !== currentProduct.id && p.category === currentProduct.category)
     .slice(0, 4)
 

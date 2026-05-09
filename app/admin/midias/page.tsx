@@ -1,10 +1,10 @@
 "use client"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ChevronDown, ChevronRight, Copy, ExternalLink, AlertCircle, Check, Image as ImageIcon, Video, LogOut, Search, ChevronLeft } from "lucide-react"
-import { products } from "@/lib/data/products"
+import type { Product } from "@/lib/data/products"
 import { buildGalleryEntries, detectProvider } from "@/lib/data/media"
 
 const PER_PAGE = 6
@@ -19,7 +19,13 @@ function CopyBtn({ text }: { text: string }) {
 
 export default function AdminMidiasPage() {
   const router = useRouter()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(""); const [page, setPage] = useState(1); const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch("/api/admin/products").then(r => r.json()).then((data) => { setProducts(Array.isArray(data) ? data : []); setLoading(false) }).catch(() => setLoading(false))
+  }, [])
   const filtered = useMemo(() => !search ? products : products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.slug.includes(search.toLowerCase())), [search])
   const totalPages = Math.ceil(filtered.length / PER_PAGE)
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)

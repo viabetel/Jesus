@@ -2,11 +2,9 @@ import Image from "next/image"
 import { Instagram, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { STORE_INSTAGRAM, STORE_INSTAGRAM_URL } from "@/lib/whatsapp"
-import { products } from "@/lib/data/products"
 
-export function InstagramSection() {
+export function InstagramSection({ feedImages }: { feedImages: string[] }) {
   // Use product images as "feed" — no iframe dependency
-  const feedImages = products.slice(0, 6).map((p) => p.images[0]).filter(Boolean)
 
   return (
     <section className="py-8 sm:py-14 lg:py-20">

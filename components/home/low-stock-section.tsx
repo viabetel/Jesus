@@ -1,13 +1,12 @@
 import Link from "next/link"
 import Image from "next/image"
+import type { Product } from "@/lib/data/products"
 import { getTotalStock } from "@/lib/data/products"
 import { AlertTriangle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { products } from "@/lib/data/products"
 import { formatPrice } from "@/lib/format"
 
-export function LowStockSection() {
-  const lowStock = products.filter((p) => getTotalStock(p) > 0 && getTotalStock(p) <= 10).slice(0, 3)
+export function LowStockSection({ products: lowStock }: { products: Product[] }) {
   if (lowStock.length === 0) return null
 
   return (
