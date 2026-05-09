@@ -1,12 +1,13 @@
 import Link from "next/link"
 import Image from "next/image"
+import { getTotalStock } from "@/lib/data/products"
 import { AlertTriangle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { products } from "@/lib/data/products"
 import { formatPrice } from "@/lib/format"
 
 export function LowStockSection() {
-  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= 10).slice(0, 3)
+  const lowStock = products.filter((p) => getTotalStock(p) > 0 && getTotalStock(p) <= 10).slice(0, 3)
   if (lowStock.length === 0) return null
 
   return (
@@ -27,7 +28,7 @@ export function LowStockSection() {
               <div className="flex-1">
                 <p className="line-clamp-1 font-serif text-xs font-semibold sm:text-sm">{p.name}</p>
                 <p className="mt-0.5 text-xs font-bold">{formatPrice(p.price)}</p>
-                <p className="mt-0.5 text-[10px] font-medium text-amber-600">Restam {p.stock} un.</p>
+                <p className="mt-0.5 text-[10px] font-medium text-amber-600">Restam {getTotalStock(p)} un.</p>
               </div>
               <ArrowRight className="h-4 w-4 text-muted-foreground sm:hidden" />
             </Link>

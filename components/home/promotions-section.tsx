@@ -3,7 +3,7 @@ import Image from "next/image"
 import { Percent, MessageCircle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProductCard } from "@/components/product-card"
-import { getPromotionProducts } from "@/lib/data/products"
+import { getPromotionProducts, getTotalStock } from "@/lib/data/products"
 import { formatPrice, getDiscountPercent } from "@/lib/format"
 import { WHATSAPP_NUMBER, createWhatsAppLink, formatProductMessage } from "@/lib/whatsapp"
 
@@ -48,9 +48,9 @@ export function PromotionsSection() {
                   <span className="text-2xl font-bold text-red-400 sm:text-3xl">{formatPrice(p.price)}</span>
                 </div>
 
-                {p.stock <= 10 && (
+                {getTotalStock(p) <= 10 && (
                   <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-red-400/70">
-                    Últimas {p.stock} unidades
+                    Últimas {getTotalStock(p)} unidades
                   </p>
                 )}
 

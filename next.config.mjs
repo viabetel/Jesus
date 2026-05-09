@@ -1,34 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    unoptimized: false,
     remotePatterns: [
-      // Google Drive direct links (via lh3)
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-        pathname: "/d/**",
-      },
-      // Google Drive (for video poster fallbacks)
-      {
-        protocol: "https",
-        hostname: "drive.google.com",
-      },
-      // Vercel Blob Storage (legacy logo URLs)
-      {
-        protocol: "https",
-        hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com",
-      },
-      // Cloudinary (recommended for production)
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-      },
+      { protocol: "https", hostname: "lh3.googleusercontent.com", pathname: "/d/**" },
+      { protocol: "https", hostname: "drive.google.com" },
+      { protocol: "https", hostname: "hebbkx1anhila5yf.public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "https", hostname: "*.supabase.in" },
     ],
     formats: ["image/avif", "image/webp"],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 }
-
 export default nextConfig
