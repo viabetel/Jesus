@@ -5,11 +5,11 @@ import { Footer } from "@/components/layout/footer"
 import { ProductDetails } from "@/components/products/product-details"
 import { RelatedProducts } from "@/components/products/related-products"
 import { getPublicProductBySlug, getPublicProducts } from "@/lib/services/public-catalog"
+import { getProductMedia } from "@/lib/services/media-repo"
 import { getTotalStock } from "@/lib/data/products"
 
 type Props = { params: Promise<{ slug: string }> }
 
-// Página dinâmica — sempre lê do banco. Sem generateStaticParams.
 export const dynamic = "force-dynamic"
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -36,12 +36,26 @@ export default async function ProductPage({ params }: Props) {
 
   const allProducts = await getPublicProducts()
 
+  // Carregar toda a mídia estruturada (todas as cores + geral)
+  // Serializar pra passar ao client component
+  let mediaData: Array<{
+    id: number; url: string; kind: string; role: string; sortOrder: number
+    colorKey: string | null; colorName: string | null; colorHex: string | null
+  }> = []
+  try {
+    const allMedia = await getProductMedia(product.id)
+    mediaData = allMedia.map(m => ({
+      id: m.id, url: m.url, kind: m.kind, role: m.role, sortOrder: m.sortOrder,
+      colorKey: m.colorKey, colorName: m.colorName, colorHex: m.colorHex,
+    }))
+  } catch { /* fallback pra images[] no ProductDetails */ }
+
   return (
     <>
       <Header />
       <main className="min-h-dvh py-4 pb-20 sm:pb-6 lg:py-10">
         <div className="mx-auto max-w-6xl px-4">
-          <ProductDetails product={product} />
+          <ProductDetails product={product} structuredMedia={mediaData} />
           <RelatedProducts currentProduct={product} allProducts={allProducts} />
 
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({

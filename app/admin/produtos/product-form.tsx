@@ -16,7 +16,7 @@ import { VariantGrid } from "./tabs/tab-variants"
 
 // ===== Constants =====
 const CATEGORIES: ProductCategory[] = [
-  "Camisetas cristãs", "Tradicionais", "Oversized", "Lançamentos", "Promoções",
+  "Camisetas", "Oversized", "Baby Look", "Moletons", "Acessórios",
 ]
 const STATUSES: ProductStatus[] = ["ativo", "rascunho", "oculto", "esgotado"]
 const BADGES: (ProductBadge | "")[] = [
@@ -44,7 +44,7 @@ export function ProductForm({ initial }: { initial: Product | null }) {
   const [name, setName] = useState(initial?.name ?? "")
   const [slug, setSlug] = useState(initial?.slug ?? "")
   const [sku, setSku] = useState(initial?.sku ?? "")
-  const [category, setCategory] = useState<ProductCategory>(initial?.category ?? "Camisetas cristãs")
+  const [category, setCategory] = useState<ProductCategory>(initial?.category ?? "Camisetas")
   const [status, setStatus] = useState<ProductStatus>(initial?.status ?? "rascunho")
   const [price, setPrice] = useState(initial?.price?.toString() ?? "")
   const [originalPrice, setOriginalPrice] = useState(initial?.originalPrice?.toString() ?? "")
@@ -370,6 +370,14 @@ export function ProductForm({ initial }: { initial: Product | null }) {
                 onMediaChange={(mediaList) => {
                   setStructuredMedia(mediaList.map(m => ({ role: m.role, kind: m.kind })))
                 }}
+                availableColors={(() => {
+                  const seen = new Map<string, { key: string; name: string; hex: string }>()
+                  for (const v of variants) {
+                    const key = v.colorName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-").toLowerCase()
+                    if (!seen.has(key)) seen.set(key, { key, name: v.colorName, hex: v.colorHex })
+                  }
+                  return [...seen.values()]
+                })()}
               />
             ) : null}
           </div>

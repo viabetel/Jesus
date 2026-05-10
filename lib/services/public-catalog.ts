@@ -20,11 +20,27 @@ export interface PublicProduct extends Product {
 }
 
 function enrichProduct(product: Product, media: ProductMedia[]): PublicProduct {
-  const cover = media.find(m => m.role === "cover" && m.kind === "image")
-  const hover = media.find(m => m.role === "hover" && m.kind === "image")
+  // Determinar cor padrão (primeira cor ativa do produto)
+  const defaultColorKey = product.variants.length > 0
+    ? product.variants.find(v => v.active)?.colorName
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-").toLowerCase() ?? null
+    : null
+
+  // Prioridade de cover: cor padrão → geral → qualquer → images[]
+  const findByRole = (role: string) => {
+    if (defaultColorKey) {
+      const colorMatch = media.find(m => m.role === role && m.kind === "image" && m.colorKey === defaultColorKey)
+      if (colorMatch) return colorMatch
+    }
+    const general = media.find(m => m.role === role && m.kind === "image" && !m.colorKey)
+    if (general) return general
+    return media.find(m => m.role === role && m.kind === "image")
+  }
+
+  const cover = findByRole("cover")
+  const hover = findByRole("hover")
   const hasVideo = media.some(m => m.kind === "video")
 
-  // Build ordered images: cover first, hover second, then rest
   const orderedImages: string[] = []
   if (cover) orderedImages.push(cover.url)
   else if (product.images[0]) orderedImages.push(product.images[0])
@@ -33,13 +49,12 @@ function enrichProduct(product: Product, media: ProductMedia[]): PublicProduct {
   else if (product.images[1]) orderedImages.push(product.images[1])
 
   const others = media
-    .filter(m => m.kind === "image" && m.role !== "cover" && m.role !== "hover")
+    .filter(m => m.kind === "image" && m.role !== "cover" && m.role !== "hover"
+      && (m.colorKey === (cover?.colorKey ?? null) || !m.colorKey))
     .sort((a, b) => a.sortOrder - b.sortOrder)
   orderedImages.push(...others.map(m => m.url))
 
-  // If no media at all, fall back to legacy images
   const finalImages = orderedImages.length > 0 ? orderedImages : product.images
-
   const videoMedia = media.find(m => m.kind === "video")
 
   return {

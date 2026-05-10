@@ -6,14 +6,14 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import {
   Search, Plus, Edit, Trash2, ExternalLink, RefreshCw,
-  ChevronLeft, ChevronRight, AlertCircle, Loader2,
+  ChevronLeft, ChevronRight, AlertCircle, Loader2, Copy,
 } from "lucide-react"
 import type { Product } from "@/lib/data/products"
 import { LogoutButton } from "../logout-button"
 
 const PAGE_SIZE = 12
 
-type StatusFilter = "all" | "ativo" | "rascunho" | "oculto" | "esgotado"
+type StatusFilter = "all" | "ativo" | "rascunho" | "oculto" | "esgotado" | "sem-capa" | "sem-estoque" | "promocao" | "lancamento"
 
 export default function AdminProdutosPage() {
   const router = useRouter()
@@ -48,7 +48,18 @@ export default function AdminProdutosPage() {
 
   const filtered = useMemo(() => {
     let r = products
-    if (statusFilter !== "all") r = r.filter(p => p.status === statusFilter)
+    switch (statusFilter) {
+      case "ativo": case "rascunho": case "oculto": case "esgotado":
+        r = r.filter(p => p.status === statusFilter); break
+      case "sem-capa":
+        r = r.filter(p => !p.images || p.images.length === 0); break
+      case "sem-estoque":
+        r = r.filter(p => p.variants.filter(v => v.active).reduce((s, v) => s + v.stock, 0) === 0); break
+      case "promocao":
+        r = r.filter(p => p.isPromotion); break
+      case "lancamento":
+        r = r.filter(p => p.isNew); break
+    }
     if (search) {
       const q = search.toLowerCase()
       r = r.filter(p =>
@@ -75,6 +86,19 @@ export default function AdminProdutosPage() {
       alert("Falha ao excluir: " + (e instanceof Error ? e.message : "erro"))
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleDuplicate = async (id: string, name: string) => {
+    if (!confirm(`Duplicar "${name}"?\n\nSerá criada uma cópia como rascunho.`)) return
+    try {
+      const res = await fetch(`/api/admin/products/${id}/duplicate`, { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error?.message ?? "Erro")
+      alert(data.message)
+      await load()
+    } catch (e) {
+      alert("Falha ao duplicar: " + (e instanceof Error ? e.message : "erro"))
     }
   }
 
@@ -147,11 +171,15 @@ export default function AdminProdutosPage() {
             onChange={e => { setStatusFilter(e.target.value as StatusFilter); setPage(1) }}
             className="h-9 rounded border border-neutral-800 bg-neutral-900 px-3 text-xs text-white outline-none"
           >
-            <option value="all">Todos status</option>
+            <option value="all">Todos</option>
             <option value="ativo">Ativos</option>
             <option value="rascunho">Rascunhos</option>
             <option value="oculto">Ocultos</option>
             <option value="esgotado">Esgotados</option>
+            <option value="sem-capa">Sem capa</option>
+            <option value="sem-estoque">Sem estoque</option>
+            <option value="promocao">Promoção</option>
+            <option value="lancamento">Lançamento</option>
           </select>
         </div>
 
@@ -247,6 +275,13 @@ export default function AdminProdutosPage() {
                             >
                               <Edit className="h-3.5 w-3.5" />
                             </Link>
+                            <button
+                              onClick={() => handleDuplicate(p.id, p.name)}
+                              className="rounded p-1 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300"
+                              title="Duplicar"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
                             <button
                               onClick={() => handleDelete(p.id, p.name)}
                               disabled={deletingId === p.id}

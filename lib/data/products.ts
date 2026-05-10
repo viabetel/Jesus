@@ -1,7 +1,7 @@
 export type ProductColor = { name: string; value: string }
 export type ProductSize = "P" | "M" | "G" | "GG"
 export type ProductBadge = "Novidade" | "Promoção" | "Lançamento" | "Mais vendida" | "Últimas unidades" | "Esgotado" | "Disponível"
-export type ProductCategory = "Camisetas cristãs" | "Tradicionais" | "Oversized" | "Lançamentos" | "Promoções"
+export type ProductCategory = "Camisetas" | "Oversized" | "Baby Look" | "Moletons" | "Acessórios"
 export type ProductStatus = "ativo" | "rascunho" | "oculto" | "esgotado"
 
 export type ProductVariant = {
@@ -135,7 +135,7 @@ export const products: Product[] = [
     name: "Camiseta Cristo em Suas Linhas",
     slug: "camiseta-cristo-em-suas-linhas",
     sku: "CAM-CRISTO-LINHAS",
-    category: "Camisetas cristãs",
+    category: "Camisetas",
     status: "ativo",
     price: 69.9,
     variants: makeVariants(
@@ -161,7 +161,7 @@ export const products: Product[] = [
     name: "Camiseta O Senhor Diz Ekballo",
     slug: "camiseta-o-senhor-diz-ekballo",
     sku: "CAM-EKBALLO",
-    category: "Tradicionais",
+    category: "Camisetas",
     status: "ativo",
     price: 74.9,
     variants: makeVariants(
@@ -213,7 +213,7 @@ export const products: Product[] = [
     name: "Camiseta Fé em Movimento",
     slug: "camiseta-fe-em-movimento",
     sku: "CAM-FE-MOVIMENTO",
-    category: "Lançamentos",
+    category: "Camisetas",
     status: "ativo",
     price: 79.9,
     variants: makeVariants(
@@ -239,7 +239,7 @@ export const products: Product[] = [
     name: "Camiseta Propósito",
     slug: "camiseta-proposito",
     sku: "CAM-PROPOSITO",
-    category: "Promoções",
+    category: "Camisetas",
     status: "ativo",
     price: 59.9,
     originalPrice: 79.9,
@@ -266,7 +266,7 @@ export const products: Product[] = [
     name: "Camiseta Graça Diária",
     slug: "camiseta-graca-diaria",
     sku: "CAM-GRACA",
-    category: "Camisetas cristãs",
+    category: "Camisetas",
     status: "ativo",
     price: 69.9,
     variants: makeVariants(
@@ -291,7 +291,7 @@ export const products: Product[] = [
     name: "Camiseta Sal e Luz",
     slug: "camiseta-sal-e-luz",
     sku: "CAM-SAL-LUZ",
-    category: "Camisetas cristãs",
+    category: "Camisetas",
     status: "ativo",
     price: 69.9,
     variants: makeVariants(
@@ -317,7 +317,7 @@ export const products: Product[] = [
     name: "Camiseta Renovado",
     slug: "camiseta-renovado",
     sku: "CAM-RENOVADO",
-    category: "Tradicionais",
+    category: "Camisetas",
     status: "ativo",
     price: 74.9,
     variants: makeVariants(
@@ -345,11 +345,11 @@ export function getActiveProducts(): Product[] {
 }
 
 export const categories: { name: ProductCategory; slug: string; description: string }[] = [
-  { name: "Camisetas cristãs", slug: "camisetas-cristas", description: "Mensagens de fé" },
-  { name: "Tradicionais", slug: "tradicionais", description: "Clássicas e versáteis" },
-  { name: "Oversized", slug: "oversized", description: "Estilo urbano" },
-  { name: "Lançamentos", slug: "lancamentos", description: "Novidades da semana" },
-  { name: "Promoções", slug: "promocoes", description: "Ofertas especiais" },
+  { name: "Camisetas", slug: "camisetas", description: "Mensagens de fé com estilo" },
+  { name: "Oversized", slug: "oversized", description: "Estilo urbano e conforto" },
+  { name: "Baby Look", slug: "baby-look", description: "Modelagem feminina" },
+  { name: "Moletons", slug: "moletons", description: "Pra dias mais frios" },
+  { name: "Acessórios", slug: "acessorios", description: "Complementos de fé" },
 ]
 
 export const sizeChart = [

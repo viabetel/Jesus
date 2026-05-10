@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     slug: typeof b.slug === "string" ? b.slug.trim() : "",
     sku: typeof b.sku === "string" ? b.sku.trim() : "",
     name: typeof b.name === "string" ? b.name.trim() : "",
-    category: (b.category ?? "Camisetas cristãs") as ProductInput["category"],
+    category: (b.category ?? "Camisetas") as ProductInput["category"],
     status: b.status,
     price: typeof b.price === "number" ? b.price : NaN,
     originalPrice: b.originalPrice ?? null,
@@ -57,6 +57,10 @@ export async function POST(request: Request) {
     isBestseller: !!b.isBestseller,
     tags: Array.isArray(b.tags) ? b.tags : [],
     sortOrder: typeof b.sortOrder === "number" ? b.sortOrder : 0,
+    composition: typeof b.composition === "string" ? b.composition : null,
+    fit: typeof b.fit === "string" ? b.fit : null,
+    care: Array.isArray(b.care) ? b.care : null,
+    sizeGuide: Array.isArray(b.sizeGuide) ? b.sizeGuide : null,
   }
 
   const result = await createProduct(input)

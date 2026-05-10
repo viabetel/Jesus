@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import Image from "next/image"
 import {
   Loader2, AlertCircle, ImageIcon, VideoIcon, Trash2,
-  X, GripVertical, RefreshCw, FolderInput, ChevronDown,
+  X, GripVertical, RefreshCw, ChevronDown, Upload,
 } from "lucide-react"
 import type { ProductMedia, MediaRole, MediaKind } from "@/lib/services/media-repo"
 
@@ -23,15 +23,17 @@ const ROLE_OPTIONS: { value: MediaRole; label: string; tone: string }[] = [
 const ROLE_LABEL = Object.fromEntries(ROLE_OPTIONS.map(r => [r.value, r.label]))
 const ROLE_TONE = Object.fromEntries(ROLE_OPTIONS.map(r => [r.value, r.tone]))
 
+type ColorOption = { key: string; name: string; hex: string }
+
 type Props = {
   productId: string
-  /** Imagens legadas no campo `images[]` do produto — pra mostrar botão de migração */
   legacyImagesCount?: number
-  /** Callback quando a mídia muda (upload, delete, reorder, role change, migrate) */
   onMediaChange?: (media: ProductMedia[]) => void
+  /** Cores disponíveis das variantes (pra saber quais grupos mostrar) */
+  availableColors?: ColorOption[]
 }
 
-export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }: Props) {
+export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange, availableColors = [] }: Props) {
   const [media, setMedia] = useState<ProductMedia[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -41,57 +43,15 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
   const [migrateMsg, setMigrateMsg] = useState<string | null>(null)
   const [draggedId, setDraggedId] = useState<number | null>(null)
   const [dropTargetId, setDropTargetId] = useState<number | null>(null)
+  const [uploadColorKey, setUploadColorKey] = useState<string>("__general__")
   const inputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
 
-  // Notifica parent quando mídia muda (pra checklist visual atualizar)
   useEffect(() => {
     if (!loading && onMediaChange) onMediaChange(media)
   }, [media, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Drive importer state
-  const [driveOpen, setDriveOpen] = useState(false)
-  const [driveFolder, setDriveFolder] = useState("")
-  const [driveImporting, setDriveImporting] = useState(false)
-  const [driveResult, setDriveResult] = useState<string | null>(null)
-  const [driveConfigured, setDriveConfigured] = useState<boolean | null>(null)
-
-  // Checa se Drive API está configurada quando o painel abre
-  useEffect(() => {
-    if (driveOpen && driveConfigured === null) {
-      fetch(`/api/admin/products/${productId}/drive-import`)
-        .then(r => r.json())
-        .then(d => setDriveConfigured(d.configured ?? false))
-        .catch(() => setDriveConfigured(false))
-    }
-  }, [driveOpen, driveConfigured, productId])
-
-  const handleDriveImport = async () => {
-    if (!driveFolder.trim()) return
-    setDriveImporting(true)
-    setDriveResult(null)
-    try {
-      const res = await fetch(`/api/admin/products/${productId}/drive-import`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folderInput: driveFolder.trim() }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        const msg = typeof data.error === "object" ? data.error.message : data.error
-        throw new Error(msg ?? `HTTP ${res.status}`)
-      }
-      const errs = data.errors?.length ? ` · ${data.errors.length} erro(s)` : ""
-      setDriveResult(`✓ Importadas: ${data.imported} · Ignoradas: ${data.skipped}${errs}`)
-      load()
-    } catch (e) {
-      setDriveResult(`Erro: ${e instanceof Error ? e.message : "desconhecido"}`)
-    } finally {
-      setDriveImporting(false)
-    }
-  }
-
-  // ===== Carrega lista =====
+  // ===== Carrega =====
   const load = async () => {
     setLoading(true)
     try {
@@ -104,12 +64,49 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
       setLoading(false)
     }
   }
-
   useEffect(() => { load() }, [productId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ===== Grupos por cor =====
+  const groups = useMemo(() => {
+    // Grupo geral + um grupo por cor que tenha mídia ou que exista nas variantes
+    const colorKeys = new Set<string>()
+    for (const m of media) {
+      if (m.colorKey) colorKeys.add(m.colorKey)
+    }
+    for (const c of availableColors) {
+      colorKeys.add(c.key)
+    }
+
+    const result: { key: string; label: string; hex: string | null; items: ProductMedia[] }[] = []
+
+    // Geral
+    const general = media.filter(m => !m.colorKey)
+    result.push({ key: "__general__", label: "Geral do produto", hex: null, items: general })
+
+    // Por cor
+    for (const key of colorKeys) {
+      const colorInfo = availableColors.find(c => c.key === key)
+      const items = media.filter(m => m.colorKey === key)
+      const label = colorInfo?.name ?? media.find(m => m.colorKey === key)?.colorName ?? key
+      const hex = colorInfo?.hex ?? media.find(m => m.colorKey === key)?.colorHex ?? null
+      result.push({ key, label, hex, items })
+    }
+
+    return result
+  }, [media, availableColors])
+
   // ===== Upload =====
+  const getColorForUpload = () => {
+    if (uploadColorKey === "__general__") return { colorKey: null, colorName: null, colorHex: null }
+    const c = availableColors.find(cc => cc.key === uploadColorKey)
+    return {
+      colorKey: uploadColorKey,
+      colorName: c?.name ?? uploadColorKey,
+      colorHex: c?.hex ?? null,
+    }
+  }
+
   const uploadFile = async (file: File, kind: MediaKind): Promise<void> => {
-    // 1) Upload pro Storage
     const fd = new FormData()
     fd.append("file", file)
     fd.append("productId", productId)
@@ -121,8 +118,15 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
       throw new Error(msg ?? `Upload falhou (${upRes.status})`)
     }
 
-    // 2) Registra na tabela product_media
-    const role: MediaRole = kind === "video" ? "video" : (media.length === 0 ? "cover" : media.length === 1 ? "hover" : "gallery")
+    const color = getColorForUpload()
+    const groupItems = media.filter(m =>
+      color.colorKey ? m.colorKey === color.colorKey : !m.colorKey
+    )
+    const role: MediaRole = kind === "video" ? "video"
+      : (groupItems.filter(m => m.kind === "image").length === 0 ? "cover"
+        : groupItems.filter(m => m.kind === "image").length === 1 ? "hover"
+        : "gallery")
+
     const addRes = await fetch(`/api/admin/products/${productId}/media`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -132,6 +136,7 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
         kind,
         role,
         alt: file.name,
+        ...color,
       }),
     })
     if (!addRes.ok) throw new Error(`Falha ao registrar mídia (${addRes.status})`)
@@ -163,40 +168,30 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
 
   // ===== Mudar role =====
   const handleRoleChange = async (mediaId: number, role: MediaRole) => {
-    // Se for "cover" ou "hover", só uma imagem pode ter — desmarca outras
+    const item = media.find(m => m.id === mediaId)
+    if (!item) return
+    // Otimista
     setMedia(prev => prev.map(m => {
       if (m.id === mediaId) return { ...m, role }
-      if ((role === "cover" || role === "hover") && m.role === role) return { ...m, role: "gallery" }
+      // Se cover/hover, desmarca outra da mesma cor
+      if ((role === "cover" || role === "hover") && m.role === role && m.colorKey === item.colorKey) return { ...m, role: "gallery" as MediaRole }
       return m
     }))
     try {
-      const res = await fetch(`/api/admin/products/${productId}/media/${mediaId}`, {
+      await fetch(`/api/admin/products/${productId}/media/${mediaId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role }),
       })
-      if (!res.ok) throw new Error(`PATCH ${res.status}`)
-      // Se foi cover/hover, garante que só essa tem o role
-      if (role === "cover" || role === "hover") {
-        const others = media.filter(m => m.id !== mediaId && m.role === role)
-        await Promise.all(others.map(m =>
-          fetch(`/api/admin/products/${productId}/media/${m.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ role: "gallery" }),
-          })
-        ))
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao salvar role")
-      // Recarrega pra ficar consistente
+    } catch {
+      setError("Erro ao salvar role")
       load()
     }
   }
 
   // ===== Remover =====
   const handleRemove = async (item: ProductMedia) => {
-    if (!confirm(`Remover esta mídia?\nO arquivo também será apagado do storage.`)) return
+    if (!confirm("Remover esta mídia?")) return
     setMedia(prev => prev.filter(m => m.id !== item.id))
     try {
       await fetch(`/api/admin/products/${productId}/media/${item.id}`, {
@@ -204,13 +199,10 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storagePath: item.storagePath }),
       })
-    } catch {
-      // recarrega se falhou
-      load()
-    }
+    } catch { load() }
   }
 
-  // ===== Drag & Drop reorder =====
+  // ===== Drag & Drop =====
   const onDragStart = (id: number) => setDraggedId(id)
   const onDragOver = (e: React.DragEvent, id: number) => {
     e.preventDefault()
@@ -220,14 +212,14 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
   const onDrop = async (e: React.DragEvent, targetId: number) => {
     e.preventDefault()
     setDropTargetId(null)
-    if (draggedId === null || draggedId === targetId) {
-      setDraggedId(null)
-      return
-    }
-
+    if (draggedId === null || draggedId === targetId) { setDraggedId(null); return }
     const fromIdx = media.findIndex(m => m.id === draggedId)
     const toIdx = media.findIndex(m => m.id === targetId)
     if (fromIdx < 0 || toIdx < 0) { setDraggedId(null); return }
+    // Só reordena dentro do mesmo grupo (mesma cor)
+    const fromItem = media[fromIdx]
+    const toItem = media[toIdx]
+    if (fromItem.colorKey !== toItem.colorKey) { setDraggedId(null); return }
 
     const next = [...media]
     const [moved] = next.splice(fromIdx, 1)
@@ -235,21 +227,18 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
     setMedia(next)
     setDraggedId(null)
 
-    // Persiste
+    // Persiste reorder do grupo
+    const groupItems = next.filter(m => m.colorKey === fromItem.colorKey)
     try {
-      const res = await fetch(`/api/admin/products/${productId}/media/reorder`, {
+      await fetch(`/api/admin/products/${productId}/media/reorder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderedIds: next.map(m => m.id) }),
+        body: JSON.stringify({ orderedIds: groupItems.map(m => m.id) }),
       })
-      if (!res.ok) throw new Error(`Reorder ${res.status}`)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao reordenar")
-      load()
-    }
+    } catch { load() }
   }
 
-  // ===== Migração do array images[] =====
+  // ===== Migração =====
   const handleMigrate = async () => {
     setMigrating(true)
     setMigrateMsg(null)
@@ -266,211 +255,155 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }
     }
   }
 
-  const images = media.filter(m => m.kind === "image")
-  const videos = media.filter(m => m.kind === "video")
+  if (loading) {
+    return <div className="flex items-center gap-2 py-8 text-[11px] text-neutral-500"><Loader2 className="h-3 w-3 animate-spin" /> Carregando mídia...</div>
+  }
 
   return (
-    <div className="space-y-3">
-      {/* Migração do array antigo — só mostra se houver imagens legadas e nada na tabela */}
-      {legacyImagesCount > 0 && media.length === 0 && !loading && (
-        <div className="flex items-start gap-2 rounded border border-yellow-900/40 bg-yellow-950/20 p-3">
+    <div className="space-y-4">
+      {/* Migração legada */}
+      {legacyImagesCount > 0 && media.length === 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-yellow-900/40 bg-yellow-950/20 p-3">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-400" />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-yellow-300">
-              Este produto tem {legacyImagesCount} imagem(ns) no formato antigo
-            </p>
-            <p className="mt-0.5 text-[10px] text-yellow-400/80">
-              Migre pra estrutura nova com role e drag-drop. Idempotente — pode rodar várias vezes.
-            </p>
+            <p className="text-[11px] font-medium text-yellow-300">{legacyImagesCount} imagem(ns) no formato antigo</p>
+            <p className="mt-0.5 text-[10px] text-yellow-400/80">Migre pra estrutura com role e cor.</p>
           </div>
-          <button
-            onClick={handleMigrate}
-            disabled={migrating}
-            className="flex h-7 items-center gap-1 rounded bg-yellow-600 px-2.5 text-[10px] font-medium text-black hover:bg-yellow-500 disabled:opacity-50"
-          >
-            {migrating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            Migrar agora
+          <button onClick={handleMigrate} disabled={migrating}
+            className="flex h-7 items-center gap-1 rounded bg-yellow-600 px-2.5 text-[10px] font-medium text-black hover:bg-yellow-500 disabled:opacity-50">
+            {migrating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />} Migrar
           </button>
         </div>
       )}
-      {migrateMsg && (
-        <p className="text-[11px] text-emerald-400">{migrateMsg}</p>
-      )}
+      {migrateMsg && <p className="text-[11px] text-emerald-400">{migrateMsg}</p>}
 
       {error && (
-        <div className="flex items-start gap-2 rounded border border-red-900/50 bg-red-950/30 p-2 text-[11px] text-red-400">
-          <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto text-red-300 hover:text-red-100">
-            <X className="h-3 w-3" />
-          </button>
+        <div className="flex items-start gap-2 rounded-lg border border-red-900/50 bg-red-950/30 p-2 text-[11px] text-red-400">
+          <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" /><span>{error}</span>
+          <button onClick={() => setError(null)} className="ml-auto text-red-300 hover:text-red-100"><X className="h-3 w-3" /></button>
         </div>
       )}
 
-      {/* Drive importer */}
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900/30">
-        <button
-          onClick={() => setDriveOpen(!driveOpen)}
-          className="flex w-full items-center justify-between gap-2 p-2.5 text-left"
-        >
-          <span className="flex items-center gap-2 text-[11px] font-medium text-neutral-300">
-            <FolderInput className="h-3.5 w-3.5" />
-            Importar de uma pasta do Drive
-          </span>
-          <ChevronDown className={`h-3.5 w-3.5 text-neutral-500 transition-transform ${driveOpen ? "rotate-180" : ""}`} />
-        </button>
-        {driveOpen && (
-          <div className="space-y-2 border-t border-neutral-800 p-2.5">
-            {driveConfigured === false && (
-              <div className="rounded border border-yellow-900/40 bg-yellow-950/20 p-2 text-[10px] text-yellow-300">
-                <strong>GOOGLE_DRIVE_API_KEY</strong> não configurada nas variáveis de ambiente.
-                Adicione no Vercel → Settings → Environment Variables. A pasta do Drive precisa
-                estar pública ou compartilhada com a chave.
-              </div>
-            )}
-            <input
-              type="text"
-              value={driveFolder}
-              onChange={(e) => setDriveFolder(e.target.value)}
-              placeholder="ID ou URL da pasta (ex: https://drive.google.com/drive/folders/abc123...)"
-              className="h-9 w-full rounded border border-neutral-800 bg-neutral-900 px-3 text-[11px] text-white outline-none focus:border-neutral-600"
-              disabled={driveImporting}
-            />
-            <button
-              onClick={handleDriveImport}
-              disabled={driveImporting || !driveFolder.trim()}
-              className="flex h-8 items-center gap-1.5 rounded bg-emerald-600 px-3 text-[11px] font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-            >
-              {driveImporting
-                ? <><Loader2 className="h-3 w-3 animate-spin" /> Importando...</>
-                : <><FolderInput className="h-3 w-3" /> Importar pasta</>}
-            </button>
-            <p className="text-[10px] text-neutral-500">
-              Lista até 30 arquivos. Imagens viram a galeria; primeira fica como capa, segunda como hover.
-              Vídeos viram o vídeo do produto. Os arquivos são copiados pro nosso Storage — Drive vira só backup.
-            </p>
-            {driveResult && (
-              <p className={`text-[11px] ${driveResult.startsWith("✓") ? "text-emerald-400" : "text-red-400"}`}>
-                {driveResult}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Imagens */}
-      <div>
-        <span className="block mb-1.5 text-[10px] font-medium uppercase tracking-wider text-neutral-400">
-          Imagens ({images.length})
-        </span>
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { e.preventDefault(); if (uploading) return; handleFiles(e.dataTransfer.files, "image") }}
-          onClick={() => !uploading && inputRef.current?.click()}
-          className="cursor-pointer rounded-lg border-2 border-dashed border-neutral-700 bg-neutral-900/30 p-3 transition-colors hover:border-neutral-500 hover:bg-neutral-900/50"
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
-            multiple
-            onChange={(e) => e.target.files && handleFiles(e.target.files, "image")}
-            className="sr-only"
-          />
-          <div className="flex flex-col items-center gap-1 text-center">
-            {uploading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
-                <p className="text-[11px] text-neutral-400">
-                  Enviando{progress ? ` ${progress.current}/${progress.total}` : "..."}
-                </p>
-              </>
-            ) : (
-              <>
-                <ImageIcon className="h-4 w-4 text-neutral-500" />
-                <p className="text-[11px] text-neutral-300">
-                  Arraste imagens ou <span className="text-emerald-400 underline">clique</span>
-                </p>
-                <p className="text-[10px] text-neutral-500">JPEG/PNG/WebP/AVIF · 10MB cada</p>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Grid de imagens — drag-drop */}
-      {loading ? (
-        <div className="flex items-center gap-2 text-[11px] text-neutral-500">
-          <Loader2 className="h-3 w-3 animate-spin" /> Carregando mídia...
-        </div>
-      ) : images.length > 0 ? (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {images.map((item) => (
-            <ImageCard
-              key={item.id}
-              item={item}
-              isDragging={draggedId === item.id}
-              isDropTarget={dropTargetId === item.id}
-              onDragStart={() => onDragStart(item.id)}
-              onDragOver={(e) => onDragOver(e, item.id)}
-              onDragLeave={onDragLeave}
-              onDrop={(e) => onDrop(e, item.id)}
-              onRoleChange={(role) => handleRoleChange(item.id, role)}
-              onRemove={() => handleRemove(item)}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      {/* Vídeo */}
-      <div>
-        <span className="block mb-1.5 text-[10px] font-medium uppercase tracking-wider text-neutral-400">
-          Vídeo ({videos.length})
-        </span>
-        {videos.length === 0 ? (
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); if (uploading) return; handleFiles(e.dataTransfer.files, "video") }}
-            onClick={() => !uploading && videoInputRef.current?.click()}
-            className="cursor-pointer rounded-lg border-2 border-dashed border-neutral-700 bg-neutral-900/30 p-3"
+      {/* ===== UPLOAD (com seleção de cor) ===== */}
+      <div className="rounded-lg border border-neutral-800 bg-neutral-900/30 p-3">
+        <div className="mb-2.5 flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Enviar para:</span>
+          <select
+            value={uploadColorKey}
+            onChange={e => setUploadColorKey(e.target.value)}
+            className="h-7 rounded border border-neutral-700 bg-neutral-800 px-2 text-[11px] text-white outline-none"
           >
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept="video/mp4,video/webm,video/quicktime"
-              onChange={(e) => e.target.files && handleFiles(e.target.files, "video")}
-              className="sr-only"
-            />
-            <div className="flex flex-col items-center gap-1 text-center">
-              <VideoIcon className="h-4 w-4 text-neutral-500" />
-              <p className="text-[11px] text-neutral-300">
-                Arraste um vídeo ou <span className="text-emerald-400 underline">clique</span>
-              </p>
-              <p className="text-[10px] text-neutral-500">MP4/WebM/MOV · 50MB</p>
-            </div>
+            <option value="__general__">Geral do produto</option>
+            {availableColors.map(c => (
+              <option key={c.key} value={c.key}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-2">
+          {/* Imagens */}
+          <div
+            onClick={() => !uploading && inputRef.current?.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); if (!uploading) handleFiles(e.dataTransfer.files, "image") }}
+            className="flex-1 cursor-pointer rounded-lg border-2 border-dashed border-neutral-700 bg-neutral-900/30 p-3 text-center transition hover:border-neutral-500"
+          >
+            <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple
+              onChange={e => e.target.files && handleFiles(e.target.files, "image")} className="sr-only" />
+            {uploading ? (
+              <><Loader2 className="mx-auto h-4 w-4 animate-spin text-neutral-400" />
+              <p className="mt-1 text-[10px] text-neutral-400">Enviando{progress ? ` ${progress.current}/${progress.total}` : "..."}</p></>
+            ) : (
+              <><ImageIcon className="mx-auto h-4 w-4 text-neutral-500" />
+              <p className="mt-1 text-[10px] text-neutral-300">Imagens</p>
+              <p className="text-[9px] text-neutral-500">JPEG/PNG/WebP · 10MB</p></>
+            )}
           </div>
-        ) : (
-          videos.map(v => (
-            <div key={v.id} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-2">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-neutral-800">
-                <VideoIcon className="h-5 w-5 text-neutral-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-mono text-[10px] text-neutral-400">{v.url}</p>
-                <a href={v.url} target="_blank" rel="noreferrer" className="text-[10px] text-emerald-400 underline">Ver vídeo</a>
-              </div>
-              <button onClick={() => handleRemove(v)} className="rounded p-1.5 text-red-500 hover:bg-red-950/40">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))
-        )}
+          {/* Vídeo */}
+          <div
+            onClick={() => !uploading && videoInputRef.current?.click()}
+            className="w-28 cursor-pointer rounded-lg border-2 border-dashed border-neutral-700 bg-neutral-900/30 p-3 text-center transition hover:border-neutral-500"
+          >
+            <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime"
+              onChange={e => e.target.files && handleFiles(e.target.files, "video")} className="sr-only" />
+            <VideoIcon className="mx-auto h-4 w-4 text-neutral-500" />
+            <p className="mt-1 text-[10px] text-neutral-300">Vídeo</p>
+            <p className="text-[9px] text-neutral-500">MP4 · 50MB</p>
+          </div>
+        </div>
       </div>
+
+      {/* ===== GRUPOS POR COR ===== */}
+      {groups.map(group => {
+        const images = group.items.filter(m => m.kind === "image")
+        const videos = group.items.filter(m => m.kind === "video")
+        const hasCover = images.some(m => m.role === "cover")
+        const isColorGroup = group.key !== "__general__"
+
+        return (
+          <div key={group.key} className="rounded-lg border border-neutral-800 bg-neutral-900/10">
+            {/* Group header */}
+            <div className="flex items-center gap-2 border-b border-neutral-800/60 px-3 py-2">
+              {group.hex && (
+                <span className="h-4 w-4 rounded border border-neutral-700" style={{ backgroundColor: group.hex }} />
+              )}
+              <span className="text-[11px] font-semibold text-neutral-300">{group.label}</span>
+              <span className="text-[10px] text-neutral-500">{group.items.length} mídia(s)</span>
+              {isColorGroup && !hasCover && group.items.length > 0 && (
+                <span className="ml-auto flex items-center gap-1 text-[9px] text-amber-400">
+                  <AlertCircle className="h-3 w-3" /> Sem capa
+                </span>
+              )}
+              {isColorGroup && group.items.length === 0 && (
+                <span className="ml-auto flex items-center gap-1 text-[9px] text-red-400">
+                  <AlertCircle className="h-3 w-3" /> Sem mídia
+                </span>
+              )}
+            </div>
+
+            {/* Images grid */}
+            {images.length > 0 ? (
+              <div className="grid grid-cols-3 gap-1.5 p-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {images.map(item => (
+                  <ImageCard
+                    key={item.id}
+                    item={item}
+                    isDragging={draggedId === item.id}
+                    isDropTarget={dropTargetId === item.id}
+                    onDragStart={() => onDragStart(item.id)}
+                    onDragOver={e => onDragOver(e, item.id)}
+                    onDragLeave={onDragLeave}
+                    onDrop={e => onDrop(e, item.id)}
+                    onRoleChange={role => handleRoleChange(item.id, role)}
+                    onRemove={() => handleRemove(item)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="px-3 py-4 text-center text-[10px] text-neutral-600">
+                {isColorGroup ? "Nenhuma imagem desta cor. Use o upload acima selecionando esta cor." : "Nenhuma imagem geral."}
+              </div>
+            )}
+
+            {/* Videos */}
+            {videos.length > 0 && (
+              <div className="border-t border-neutral-800/40 px-3 py-2 space-y-1.5">
+                {videos.map(v => (
+                  <div key={v.id} className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-900 p-2">
+                    <VideoIcon className="h-4 w-4 shrink-0 text-neutral-400" />
+                    <a href={v.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate font-mono text-[10px] text-emerald-400 underline">{v.url}</a>
+                    <button onClick={() => handleRemove(v)} className="shrink-0 rounded p-1 text-red-500 hover:bg-red-950/40"><Trash2 className="h-3 w-3" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-// ===== Subcomponente: card de imagem com drag, role e remover =====
+// ===== Subcomponente: card de imagem =====
 
 function ImageCard({
   item, isDragging, isDropTarget,
@@ -496,39 +429,29 @@ function ImageCard({
       onDrop={onDrop}
       className={`group relative aspect-square overflow-hidden rounded border bg-neutral-900 transition-all ${
         isDragging ? "opacity-40 scale-95" : ""
-      } ${
-        isDropTarget ? "border-emerald-500 ring-2 ring-emerald-500/40" : "border-neutral-800"
-      }`}
+      } ${isDropTarget ? "border-emerald-500 ring-2 ring-emerald-500/40" : "border-neutral-800"}`}
     >
-      <Image src={item.url} alt={item.alt ?? ""} fill className="object-cover" sizes="160px" unoptimized />
+      <Image src={item.url} alt={item.alt ?? ""} fill className="object-cover" sizes="120px" unoptimized />
 
-      {/* Badge de role */}
-      <span className={`absolute left-1 top-1 rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider ${ROLE_TONE[item.role] ?? "bg-neutral-700 text-neutral-200"}`}>
+      <span className={`absolute left-0.5 top-0.5 rounded px-1 py-0.5 text-[7px] font-bold uppercase tracking-wider ${ROLE_TONE[item.role] ?? "bg-neutral-700 text-neutral-200"}`}>
         {ROLE_LABEL[item.role] ?? item.role}
       </span>
 
-      {/* Drag handle */}
-      <span className="absolute right-1 top-1 flex h-5 w-5 cursor-grab items-center justify-center rounded bg-black/70 text-white opacity-0 group-hover:opacity-100">
-        <GripVertical className="h-3 w-3" />
+      <span className="absolute right-0.5 top-0.5 flex h-4 w-4 cursor-grab items-center justify-center rounded bg-black/60 text-white opacity-0 group-hover:opacity-100">
+        <GripVertical className="h-2.5 w-2.5" />
       </span>
 
-      {/* Overlay hover */}
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <select
-          value={item.role}
-          onChange={(e) => onRoleChange(e.target.value as MediaRole)}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full rounded bg-neutral-800 px-1.5 py-0.5 text-[9px] text-white outline-none"
-        >
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <select value={item.role} onChange={e => onRoleChange(e.target.value as MediaRole)}
+          onClick={e => e.stopPropagation()}
+          className="w-full rounded bg-neutral-800 px-1 py-0.5 text-[8px] text-white outline-none">
           {ROLE_OPTIONS.filter(r => r.value !== "video").map(r => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
         </select>
-        <button
-          onClick={onRemove}
-          className="flex h-5 items-center justify-center gap-1 rounded bg-red-600/90 text-[9px] font-medium text-white hover:bg-red-500"
-        >
-          <Trash2 className="h-2.5 w-2.5" /> Remover
+        <button onClick={onRemove}
+          className="flex h-4 items-center justify-center gap-0.5 rounded bg-red-600/90 text-[8px] font-medium text-white hover:bg-red-500">
+          <Trash2 className="h-2 w-2" /> Remover
         </button>
       </div>
     </div>

@@ -14,7 +14,12 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { ProductGallery } from "./product-gallery"
 
-export function ProductDetails({ product }: { product: Product }) {
+type MediaItem = {
+  id: number; url: string; kind: string; role: string; sortOrder: number
+  colorKey: string | null; colorName: string | null; colorHex: string | null
+}
+
+export function ProductDetails({ product, structuredMedia = [] }: { product: Product; structuredMedia?: MediaItem[] }) {
   const allColors = useMemo(() => getProductColors(product), [product])
   const allSizes = useMemo(() => getProductSizes(product), [product])
 
@@ -23,6 +28,32 @@ export function ProductDetails({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1)
   const [descOpen, setDescOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
+
+  // Derivar imagens pra galeria baseado na cor selecionada
+  const galleryImages = useMemo(() => {
+    if (structuredMedia.length === 0) return product.images
+
+    const colorKey = selectedColor
+      ? selectedColor.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-").toLowerCase()
+      : null
+
+    // 1. Mídia da cor selecionada
+    if (colorKey) {
+      const colorMedia = structuredMedia
+        .filter(m => m.colorKey === colorKey && m.kind === "image")
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+      if (colorMedia.length > 0) return colorMedia.map(m => m.url)
+    }
+
+    // 2. Mídia geral
+    const generalMedia = structuredMedia
+      .filter(m => !m.colorKey && m.kind === "image")
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    if (generalMedia.length > 0) return generalMedia.map(m => m.url)
+
+    // 3. Fallback images[]
+    return product.images
+  }, [structuredMedia, selectedColor, product.images])
 
   const { addItem, isInCart } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
@@ -77,7 +108,7 @@ export function ProductDetails({ product }: { product: Product }) {
   return (
     <>
       <div className="grid gap-5 lg:grid-cols-[minmax(300px,480px)_1fr] lg:gap-8 xl:grid-cols-[480px_1fr]">
-        <ProductGallery product={product} />
+        <ProductGallery product={{ ...product, images: galleryImages }} />
 
         <div className="space-y-3.5">
           {/* Breadcrumb */}
