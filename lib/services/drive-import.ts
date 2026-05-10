@@ -14,7 +14,7 @@
  */
 
 import { uploadProductMedia, type UploadResult } from "./upload"
-import { addMedia, type MediaRole } from "./media-repo"
+import { addMedia, getProductMedia, type MediaRole } from "./media-repo"
 
 export type DriveImportResult =
   | { ok: true; imported: number; skipped: number; errors: string[] }
@@ -122,6 +122,14 @@ export async function importDriveFolder(opts: {
   let skipped = 0
   const errors: string[] = []
 
+  // Evita tentar criar outra cover/hover quando o grupo já possui mídia.
+  // Escopo: geral (colorKey null) ou cor selecionada.
+  const existingMedia = await getProductMedia(opts.productId).catch(() => [])
+  let imageCount = existingMedia.filter(m => {
+    const sameColor = opts.colorKey ? m.colorKey === opts.colorKey : !m.colorKey
+    return sameColor && m.kind === "image"
+  }).length
+
   for (const f of files) {
     const kind = inferKind(f.mimeType)
     if (!kind || !ALLOWED_MIMES.has(f.mimeType)) {
@@ -154,7 +162,7 @@ export async function importDriveFolder(opts: {
       // Registra na tabela product_media
       const role: MediaRole = kind === "video"
         ? "video"
-        : (imported === 0 ? "cover" : imported === 1 ? "hover" : "gallery")
+        : (imageCount === 0 ? "cover" : imageCount === 1 ? "hover" : "gallery")
 
       const addResult = await addMedia({
         productId: opts.productId,
@@ -172,6 +180,7 @@ export async function importDriveFolder(opts: {
         continue
       }
       imported++
+      if (kind === "image") imageCount++
     } catch (e) {
       errors.push(`${f.name}: ${e instanceof Error ? e.message : "erro"}`)
     }

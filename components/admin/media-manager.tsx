@@ -25,6 +25,9 @@ const ROLE_TONE = Object.fromEntries(ROLE_OPTIONS.map(r => [r.value, r.tone]))
 
 type ColorOption = { key: string; name: string; hex: string }
 
+type DriveStatus = { configured: boolean } | null
+type DriveImportResponse = { ok?: boolean; imported?: number; skipped?: number; errors?: string[]; error?: string | { code?: string; message?: string } }
+
 type Props = {
   productId: string
   legacyImagesCount?: number
@@ -44,6 +47,13 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange, 
   const [draggedId, setDraggedId] = useState<number | null>(null)
   const [dropTargetId, setDropTargetId] = useState<number | null>(null)
   const [uploadColorKey, setUploadColorKey] = useState<string>("__general__")
+  const [driveOpen, setDriveOpen] = useState(false)
+  const [driveStatus, setDriveStatus] = useState<DriveStatus>(null)
+  const [driveInput, setDriveInput] = useState("")
+  const [driveLimit, setDriveLimit] = useState(30)
+  const [driveColorKey, setDriveColorKey] = useState<string>("__general__")
+  const [driveImporting, setDriveImporting] = useState(false)
+  const [driveMessage, setDriveMessage] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
 
@@ -65,6 +75,80 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange, 
     }
   }
   useEffect(() => { load() }, [productId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ===== Google Drive =====
+  const parseApiError = async (res: Response, fallback: string) => {
+    try {
+      const data = await res.json() as DriveImportResponse
+      const raw = data.error
+      if (typeof raw === "string") return raw
+      if (raw && typeof raw === "object" && raw.message) return raw.message
+      if (raw && typeof raw === "object" && raw.code) return raw.code
+    } catch {}
+    return fallback
+  }
+
+  const loadDriveStatus = async () => {
+    try {
+      const res = await fetch(`/api/admin/products/${productId}/drive-import`, { cache: "no-store" })
+      if (!res.ok) return
+      setDriveStatus(await res.json() as DriveStatus)
+    } catch {
+      setDriveStatus(null)
+    }
+  }
+
+  useEffect(() => { loadDriveStatus() }, [productId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const getColorPayload = (colorKey: string) => {
+    if (colorKey === "__general__") return { colorKey: null, colorName: null, colorHex: null }
+    const c = availableColors.find(cc => cc.key === colorKey)
+    return {
+      colorKey,
+      colorName: c?.name ?? colorKey,
+      colorHex: c?.hex ?? null,
+    }
+  }
+
+  const handleDriveImport = async () => {
+    setError(null)
+    setDriveMessage(null)
+    const folderInput = driveInput.trim()
+    if (!folderInput) {
+      setError("Informe a URL ou o ID da pasta do Google Drive.")
+      return
+    }
+
+    setDriveImporting(true)
+    try {
+      const color = getColorPayload(driveColorKey)
+      const res = await fetch(`/api/admin/products/${productId}/drive-import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          folderInput,
+          limit: driveLimit,
+          ...color,
+        }),
+      })
+
+      const data = await res.json() as DriveImportResponse
+      if (!res.ok || data.ok === false) {
+        const raw = data.error
+        const message = typeof raw === "string" ? raw : raw && typeof raw === "object" ? raw.message : undefined
+        throw new Error(message ?? `Falha ao importar do Drive (${res.status})`)
+      }
+
+      const errors = data.errors?.length ? ` · ${data.errors.length} aviso(s)` : ""
+      setDriveMessage(`Importação concluída: ${data.imported ?? 0} arquivo(s) importado(s), ${data.skipped ?? 0} ignorado(s)${errors}.`)
+      setDriveInput("")
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao importar do Google Drive")
+    } finally {
+      setDriveImporting(false)
+    }
+  }
 
   // ===== Grupos por cor =====
   const groups = useMemo(() => {
@@ -96,15 +180,7 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange, 
   }, [media, availableColors])
 
   // ===== Upload =====
-  const getColorForUpload = () => {
-    if (uploadColorKey === "__general__") return { colorKey: null, colorName: null, colorHex: null }
-    const c = availableColors.find(cc => cc.key === uploadColorKey)
-    return {
-      colorKey: uploadColorKey,
-      colorName: c?.name ?? uploadColorKey,
-      colorHex: c?.hex ?? null,
-    }
-  }
+  const getColorForUpload = () => getColorPayload(uploadColorKey)
 
   const uploadFile = async (file: File, kind: MediaKind): Promise<void> => {
     const fd = new FormData()
@@ -139,7 +215,10 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange, 
         ...color,
       }),
     })
-    if (!addRes.ok) throw new Error(`Falha ao registrar mídia (${addRes.status})`)
+    if (!addRes.ok) {
+      const msg = await parseApiError(addRes, `Falha ao registrar mídia (${addRes.status})`)
+      throw new Error(msg)
+    }
     const newItem: ProductMedia = await addRes.json()
     setMedia(prev => [...prev, newItem])
   }
@@ -330,6 +409,93 @@ export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange, 
             <p className="text-[9px] text-neutral-500">MP4 · 50MB</p>
           </div>
         </div>
+      </div>
+
+      {/* ===== GOOGLE DRIVE IMPORT ===== */}
+      <div className="rounded-lg border border-neutral-800 bg-neutral-900/20">
+        <button
+          type="button"
+          onClick={() => setDriveOpen(v => !v)}
+          className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] font-semibold text-neutral-200 hover:bg-neutral-800/30"
+        >
+          <Upload className="h-3.5 w-3.5 text-emerald-400" />
+          <span className="flex-1">Importar do Google Drive</span>
+          {driveStatus?.configured === false && (
+            <span className="rounded-full border border-amber-500/40 bg-amber-950/40 px-2 py-0.5 text-[9px] text-amber-300">sem chave</span>
+          )}
+          {driveStatus?.configured === true && (
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-950/30 px-2 py-0.5 text-[9px] text-emerald-300">configurado</span>
+          )}
+          <ChevronDown className={`h-3.5 w-3.5 text-neutral-500 transition-transform ${driveOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        {driveOpen && (
+          <div className="space-y-3 border-t border-neutral-800/60 p-3">
+            {driveStatus?.configured === false && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-900/50 bg-amber-950/25 p-2 text-[10px] text-amber-300">
+                <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                <span>GOOGLE_DRIVE_API_KEY não configurada. Adicione essa variável no Vercel para importar pastas do Drive.</span>
+              </div>
+            )}
+
+            <div className="grid gap-2 md:grid-cols-[1fr_160px_100px]">
+              <label className="space-y-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">URL ou ID da pasta</span>
+                <input
+                  value={driveInput}
+                  onChange={e => setDriveInput(e.target.value)}
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="h-8 w-full rounded border border-neutral-700 bg-neutral-800 px-2 text-[11px] text-white outline-none placeholder:text-neutral-600"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Destino</span>
+                <select
+                  value={driveColorKey}
+                  onChange={e => setDriveColorKey(e.target.value)}
+                  className="h-8 w-full rounded border border-neutral-700 bg-neutral-800 px-2 text-[11px] text-white outline-none"
+                >
+                  <option value="__general__">Geral do produto</option>
+                  {availableColors.map(c => (
+                    <option key={c.key} value={c.key}>{c.name}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Limite</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={driveLimit}
+                  onChange={e => setDriveLimit(Math.min(100, Math.max(1, Number(e.target.value) || 1)))}
+                  className="h-8 w-full rounded border border-neutral-700 bg-neutral-800 px-2 text-[11px] text-white outline-none"
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDriveImport}
+                disabled={driveImporting || driveStatus?.configured === false}
+                className="flex h-8 items-center gap-1.5 rounded bg-emerald-500 px-3 text-[11px] font-semibold text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {driveImporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                Importar mídia
+              </button>
+              <p className="text-[10px] text-neutral-500">A pasta precisa estar pública ou compartilhada para leitura. Imagens viram capa/hover/galeria automaticamente; vídeo vira role vídeo.</p>
+            </div>
+
+            {driveMessage && (
+              <div className="rounded border border-emerald-900/50 bg-emerald-950/20 p-2 text-[10px] text-emerald-300">
+                {driveMessage}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ===== GRUPOS POR COR ===== */}
