@@ -96,6 +96,10 @@ export async function getPublicProducts(): Promise<PublicProduct[]> {
       sortOrder: Number(row.sort_order ?? 0),
       width: row.width ? Number(row.width) : null,
       height: row.height ? Number(row.height) : null,
+      colorKey: row.color_key ? String(row.color_key) : null,
+      colorName: row.color_name ? String(row.color_name) : null,
+      colorHex: row.color_hex ? String(row.color_hex) : null,
+      variantSku: row.variant_sku ? String(row.variant_sku) : null,
     })
     mediaMap.set(pid, existing)
   }

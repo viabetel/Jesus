@@ -25,7 +25,7 @@ export async function POST(request: Request, { params }: Ctx) {
   }
   const { id } = await params
 
-  let body: { folderInput?: string; limit?: number }
+  let body: { folderInput?: string; limit?: number; colorKey?: string; colorName?: string; colorHex?: string }
   try {
     body = await request.json()
   } catch {
@@ -39,6 +39,9 @@ export async function POST(request: Request, { params }: Ctx) {
     productId: id,
     folderInput: body.folderInput,
     limit: body.limit,
+    colorKey: body.colorKey ?? null,
+    colorName: body.colorName ?? null,
+    colorHex: body.colorHex ?? null,
   })
 
   if (!result.ok) {

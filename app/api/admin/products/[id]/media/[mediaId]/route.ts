@@ -5,6 +5,14 @@ import { deleteProductMedia as deleteFromStorage } from "@/lib/services/upload"
 
 type Ctx = { params: Promise<{ id: string; mediaId: string }> }
 
+/**
+ * PATCH /api/admin/products/[id]/media/[mediaId]
+ *   body: { role?, sortOrder?, alt?, colorKey?, colorName?, colorHex?, variantSku? }
+ *
+ * DELETE /api/admin/products/[id]/media/[mediaId]
+ *   body opcional: { storagePath?, keepStorage? }
+ */
+
 export async function PATCH(request: Request, { params }: Ctx) {
   if (!isAdminAuthenticated(request)) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
@@ -22,7 +30,16 @@ export async function PATCH(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 })
   }
 
-  const patch = body as MediaPatch
+  const b = body as Record<string, unknown>
+  const patch: MediaPatch = {}
+  if (b.role !== undefined) patch.role = b.role as MediaPatch["role"]
+  if (b.sortOrder !== undefined) patch.sortOrder = b.sortOrder as number
+  if (b.alt !== undefined) patch.alt = b.alt as string | null
+  if (b.colorKey !== undefined) patch.colorKey = b.colorKey as string | null
+  if (b.colorName !== undefined) patch.colorName = b.colorName as string | null
+  if (b.colorHex !== undefined) patch.colorHex = b.colorHex as string | null
+  if (b.variantSku !== undefined) patch.variantSku = b.variantSku as string | null
+
   const result = await updateMedia(idNum, patch)
   if (!result.ok) {
     const status =
@@ -45,7 +62,6 @@ export async function DELETE(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "mediaId inválido." }, { status: 400 })
   }
 
-  // Lê o body opcional pra saber se deve apagar do storage também
   let alsoDeleteStorage = true
   let storagePath: string | null = null
   try {
@@ -53,7 +69,7 @@ export async function DELETE(request: Request, { params }: Ctx) {
     if (body.keepStorage) alsoDeleteStorage = false
     if (body.storagePath) storagePath = body.storagePath
   } catch {
-    // sem body, segue o default
+    // sem body, segue default
   }
 
   const result = await deleteMedia(idNum)
@@ -62,9 +78,8 @@ export async function DELETE(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: result.error }, { status })
   }
 
-  // Tenta limpar o arquivo do bucket (não-bloqueante)
   if (alsoDeleteStorage && storagePath) {
-    deleteFromStorage(storagePath).catch(() => { /* arquivo órfão é ok */ })
+    deleteFromStorage(storagePath).catch(() => {})
   }
 
   return NextResponse.json({ ok: true })

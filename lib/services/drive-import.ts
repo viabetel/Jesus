@@ -52,6 +52,10 @@ export async function importDriveFolder(opts: {
   folderInput: string
   /** Limite de arquivos pra importar de uma vez (proteção contra pasta gigante) */
   limit?: number
+  /** Cor pra vincular toda a mídia importada */
+  colorKey?: string | null
+  colorName?: string | null
+  colorHex?: string | null
 }): Promise<DriveImportResult> {
   const apiKey = process.env.GOOGLE_DRIVE_API_KEY
   if (!apiKey) {
@@ -159,6 +163,9 @@ export async function importDriveFolder(opts: {
         kind,
         role,
         alt: f.name,
+        colorKey: opts.colorKey ?? null,
+        colorName: opts.colorName ?? null,
+        colorHex: opts.colorHex ?? null,
       })
       if (!addResult.ok) {
         errors.push(`${f.name}: ${addResult.error.message}`)

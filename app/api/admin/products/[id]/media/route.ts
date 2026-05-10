@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { isAdminAuthenticated } from "@/lib/auth/admin"
 import {
   getProductMedia,
+  getProductMediaByColor,
   addMedia,
   type MediaInput,
 } from "@/lib/services/media-repo"
@@ -10,7 +11,12 @@ type Ctx = { params: Promise<{ id: string }> }
 
 /**
  * GET  /api/admin/products/[id]/media → lista mídia do produto (auth)
+ *   ?color=preto → filtra por cor
+ *   ?color=__general__ → só mídia geral
+ *   sem query → todas
+ *
  * POST /api/admin/products/[id]/media → adiciona mídia (auth)
+ *   body: { url, kind, role?, colorKey?, colorName?, colorHex?, variantSku?, alt?, sortOrder?, storagePath? }
  */
 
 export async function GET(request: Request, { params }: Ctx) {
@@ -18,8 +24,18 @@ export async function GET(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
   }
   const { id } = await params
+  const url = new URL(request.url)
+  const colorParam = url.searchParams.get("color")
+
   try {
-    const media = await getProductMedia(id)
+    let media
+    if (colorParam === "__general__") {
+      media = await getProductMediaByColor(id, null)
+    } else if (colorParam) {
+      media = await getProductMediaByColor(id, colorParam)
+    } else {
+      media = await getProductMedia(id)
+    }
     return NextResponse.json(media)
   } catch (e) {
     return NextResponse.json(
@@ -55,6 +71,10 @@ export async function POST(request: Request, { params }: Ctx) {
     role: b.role,
     alt: b.alt,
     sortOrder: b.sortOrder,
+    colorKey: b.colorKey ?? null,
+    colorName: b.colorName ?? null,
+    colorHex: b.colorHex ?? null,
+    variantSku: b.variantSku ?? null,
   }
 
   const result = await addMedia(input)
