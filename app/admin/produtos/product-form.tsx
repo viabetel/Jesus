@@ -1,16 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   Save, ArrowLeft, AlertCircle, Loader2, Plus, Trash2,
-  ToggleLeft, ToggleRight, Info,
+  ToggleLeft, ToggleRight, Info, Check, CheckCircle,
 } from "lucide-react"
 import type {
-  Product, ProductCategory, ProductStatus, ProductSize, ProductBadge,
+  Product, ProductCategory, ProductStatus, ProductSize, ProductBadge, ProductVariant,
 } from "@/lib/data/products"
 import { MediaManager } from "@/components/admin/media-manager"
+import { getPublishChecklist, type ChecklistInput } from "@/lib/services/publish-checklist"
 
 const CATEGORIES: ProductCategory[] = [
   "Camisetas cristãs", "Tradicionais", "Oversized", "Lançamentos", "Promoções",
@@ -31,13 +32,19 @@ export function ProductForm({ initial }: { initial: Product | null }) {
   const [slug, setSlug] = useState(initial?.slug ?? "")
   const [sku, setSku] = useState(initial?.sku ?? "")
   const [category, setCategory] = useState<ProductCategory>(initial?.category ?? "Camisetas cristãs")
-  const [status, setStatus] = useState<ProductStatus>(initial?.status ?? "ativo")
+  const [status, setStatus] = useState<ProductStatus>(initial?.status ?? "rascunho")
   const [price, setPrice] = useState(initial?.price?.toString() ?? "")
   const [originalPrice, setOriginalPrice] = useState(initial?.originalPrice?.toString() ?? "")
   const [badge, setBadge] = useState<string>(initial?.badge ?? "")
   const [description, setDescription] = useState(initial?.description ?? "")
   const [details, setDetails] = useState(initial?.details?.join("\n") ?? "")
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "")
+  const [composition, setComposition] = useState(initial?.composition ?? "")
+  const [fit, setFit] = useState(initial?.fit ?? "")
+  const [care, setCare] = useState(Array.isArray(initial?.care) ? initial.care.join("\n") : (initial?.care ?? ""))
+  const [sizeGuide, setSizeGuide] = useState(
+    initial?.sizeGuide?.map(sg => `${sg.size}, ${sg.width}, ${sg.length}`).join("\n") ?? ""
+  )
   const [isNew_, setIsNew_] = useState(initial?.isNew ?? false)
   const [isPromotion, setIsPromotion] = useState(initial?.isPromotion ?? false)
   const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false)
@@ -48,6 +55,36 @@ export function ProductForm({ initial }: { initial: Product | null }) {
   const [newColorHex, setNewColorHex] = useState("#000000")
   const [newSize, setNewSize] = useState<ProductSize>("M")
   const [newStock, setNewStock] = useState("0")
+
+  // Estoque detalhado do servidor (reservado, consumido, disponível)
+  type StockDetail = { sku: string; stock: number; reserved: number; consumed: number; available: number }
+  const [stockDetails, setStockDetails] = useState<Map<string, StockDetail>>(new Map())
+
+  // Mídia estruturada pra checklist visual refletir cover real
+  const [structuredMedia, setStructuredMedia] = useState<{ role: string; kind: string }[]>([])
+
+  useEffect(() => {
+    if (!initial) return
+    // Fetch estoque
+    fetch(`/api/admin/products/${initial.id}/stock`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { balances?: StockDetail[] } | null) => {
+        if (!data?.balances) return
+        const map = new Map<string, StockDetail>()
+        for (const d of data.balances) map.set(d.sku, d)
+        setStockDetails(map)
+      })
+      .catch(() => {})
+    // Fetch mídia estruturada
+    fetch(`/api/admin/products/${initial.id}/media`)
+      .then(r => r.ok ? r.json() : [])
+      .then((data: { role?: string; kind?: string }[]) => {
+        if (Array.isArray(data)) {
+          setStructuredMedia(data.map(m => ({ role: m.role ?? "gallery", kind: m.kind ?? "image" })))
+        }
+      })
+      .catch(() => {})
+  }, [initial]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [saving, setSaving] = useState(false)
   const [savingVariant, setSavingVariant] = useState(false)
@@ -94,6 +131,14 @@ export function ProductForm({ initial }: { initial: Product | null }) {
       isNew: isNew_,
       isPromotion,
       isBestseller,
+      composition: composition.trim() || null,
+      fit: fit.trim() || null,
+      care: care.split("\n").map(s => s.trim()).filter(Boolean),
+      sizeGuide: sizeGuide.split("\n").map(line => {
+        const parts = line.split(",").map(s => s.trim())
+        if (parts.length >= 3) return { size: parts[0], width: parts[1], length: parts[2] }
+        return null
+      }).filter((x): x is { size: string; width: string; length: string } => x !== null),
     }
 
     setSaving(true)
@@ -314,6 +359,30 @@ export function ProductForm({ initial }: { initial: Product | null }) {
           </Field>
         </Section>
 
+        {/* Composição / Cuidados */}
+        <Section title="Composição & Cuidados">
+          <Grid>
+            <Field label="Composição / Material" hint="Ex: 100% algodão penteado 30.1">
+              <input value={composition} onChange={e => setComposition(e.target.value)}
+                className={inputCls} placeholder="100% algodão penteado 30.1" />
+            </Field>
+            <Field label="Modelagem / Fit" hint="Ex: Regular fit, gola redonda">
+              <input value={fit} onChange={e => setFit(e.target.value)}
+                className={inputCls} placeholder="Regular fit, gola redonda" />
+            </Field>
+          </Grid>
+          <Field label="Cuidados de lavagem" hint="Um cuidado por linha. Ex: Lavar à máquina (30°C)">
+            <textarea value={care} onChange={e => setCare(e.target.value)}
+              rows={4} className={`${inputCls} font-sans`}
+              placeholder={"Lavar à máquina (30°C)\nNão usar alvejante\nSecar à sombra\nPassar em temperatura média"} />
+          </Field>
+          <Field label="Guia de medidas" hint="Um por linha: TAM, LARGURA, COMPRIMENTO (separados por vírgula)">
+            <textarea value={sizeGuide} onChange={e => setSizeGuide(e.target.value)}
+              rows={5} className={`${inputCls} font-mono text-[10px]`}
+              placeholder={"P, 50cm, 68cm\nM, 52cm, 70cm\nG, 54cm, 72cm\nGG, 58cm, 74cm"} />
+          </Field>
+        </Section>
+
         {/* Mídia */}
         <Section title="Mídia">
           {isNew ? (
@@ -332,6 +401,9 @@ export function ProductForm({ initial }: { initial: Product | null }) {
               <MediaManager
                 productId={initial.id}
                 legacyImagesCount={initial.images?.length ?? 0}
+                onMediaChange={(mediaList) => {
+                  setStructuredMedia(mediaList.map(m => ({ role: m.role, kind: m.kind })))
+                }}
               />
               <p className="text-[10px] text-neutral-500">
                 💡 Mídia agora é estruturada. Use os badges pra marcar capa/hover/frente/costas/etc.
@@ -350,6 +422,17 @@ export function ProductForm({ initial }: { initial: Product | null }) {
           </div>
         </Section>
 
+        {/* Checklist de publicação */}
+        {!isNew && initial && (
+          <PublishChecklist product={{
+            ...initial,
+            name, slug, sku, category, price: parseFloat(price) || 0,
+            description, images: initial.images,
+            variants, composition, care: care.split("\n").filter(Boolean),
+            structuredMedia,
+          }} />
+        )}
+
         {/* Variantes (só na edição) */}
         {!isNew && initial && (
           <Section title={`Variantes (${variants.length})`}>
@@ -361,7 +444,10 @@ export function ProductForm({ initial }: { initial: Product | null }) {
                       <th className="px-3 py-1.5 text-left font-medium">SKU</th>
                       <th className="px-3 py-1.5 text-left font-medium">Cor</th>
                       <th className="px-3 py-1.5 text-left font-medium">Tam.</th>
-                      <th className="px-3 py-1.5 text-right font-medium">Estoque</th>
+                      <th className="px-3 py-1.5 text-right font-medium">Cadastrado</th>
+                      <th className="px-3 py-1.5 text-right font-medium">Reservado</th>
+                      <th className="px-3 py-1.5 text-right font-medium">Vendido</th>
+                      <th className="px-3 py-1.5 text-right font-medium">Disponível</th>
                       <th className="px-3 py-1.5 text-center font-medium">Ativa</th>
                       <th className="px-3 py-1.5 text-right font-medium">Ações</th>
                     </tr>
@@ -389,6 +475,18 @@ export function ProductForm({ initial }: { initial: Product | null }) {
                             className="w-16 rounded bg-neutral-900 px-2 py-0.5 text-right font-mono text-[11px] outline-none focus:bg-neutral-800"
                           />
                         </td>
+                        {(() => {
+                          const sd = stockDetails.get(v.sku)
+                          return (
+                            <>
+                              <td className="px-3 py-1.5 text-right font-mono text-[10px] text-amber-400">{sd?.reserved ?? 0}</td>
+                              <td className="px-3 py-1.5 text-right font-mono text-[10px] text-blue-400">{sd?.consumed ?? 0}</td>
+                              <td className={`px-3 py-1.5 text-right font-mono text-[10px] font-semibold ${(sd?.available ?? v.stock) === 0 ? "text-red-400" : "text-emerald-400"}`}>
+                                {sd?.available ?? v.stock}
+                              </td>
+                            </>
+                          )
+                        })()}
                         <td className="px-3 py-1.5 text-center">
                           <button onClick={() => handleVariantToggle(v.sku)} className="text-neutral-400 hover:text-white">
                             {v.active ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4" />}
@@ -488,5 +586,39 @@ function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; labe
       {on ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
       {label}
     </button>
+  )
+}
+
+function PublishChecklist({ product }: { product: Partial<Product> & { variants: ProductVariant[]; structuredMedia?: { role: string; kind: string }[] } }) {
+  const checks = getPublishChecklist(product as ChecklistInput)
+  const allRequired = checks.filter(c => c.required)
+  const passedRequired = allRequired.filter(c => c.passed)
+  const ready = passedRequired.length === allRequired.length
+
+  return (
+    <Section title={`Checklist de publicação (${passedRequired.length}/${allRequired.length})`}>
+      {ready ? (
+        <div className="flex items-center gap-2 text-[11px] text-emerald-400">
+          <CheckCircle className="h-4 w-4" />
+          Produto pronto para ser ativado.
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-[11px] text-amber-400">
+          <AlertCircle className="h-4 w-4" />
+          Itens obrigatórios faltando. Não será possível ativar o produto.
+        </div>
+      )}
+      <ul className="mt-2 space-y-1">
+        {checks.map(c => (
+          <li key={c.id} className={`flex items-center gap-2 text-[11px] ${c.passed ? "text-neutral-400" : c.required ? "text-red-400" : "text-neutral-500"}`}>
+            {c.passed
+              ? <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-900/40 text-emerald-400"><Check className="h-2.5 w-2.5" /></span>
+              : <span className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-800 text-neutral-500">·</span>}
+            {c.label}
+            {!c.required && !c.passed && <span className="text-[9px] text-neutral-600">(opcional)</span>}
+          </li>
+        ))}
+      </ul>
+    </Section>
   )
 }

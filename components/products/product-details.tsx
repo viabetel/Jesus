@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useCart } from "@/contexts/cart-context"
 import { useFavorites } from "@/contexts/favorites-context"
 import type { Product, ProductSize, ProductColor } from "@/lib/data/products"
-import { getProductColors, getProductSizes, getVariantStock, getAvailableSizesForColor, getAvailableColorsForSize, getTotalStock } from "@/lib/data/products"
+import { getProductColors, getProductSizes, getVariantStock, getVariantSku, getAvailableSizesForColor, getAvailableColorsForSize, getTotalStock } from "@/lib/data/products"
 import { WHATSAPP_NUMBER, createWhatsAppLink, formatProductMessage } from "@/lib/whatsapp"
 import { formatPrice, getDiscountPercent } from "@/lib/format"
 import { toast } from "sonner"
@@ -40,12 +40,14 @@ export function ProductDetails({ product }: { product: Product }) {
   const isOutOfStock = totalStock === 0
   const canAdd = selectedColor && selectedSize && currentStock > 0
   const isFav = isFavorite(product.id)
-  const inCart = isInCart(product.id, selectedSize || undefined, selectedColor?.name)
+  const currentVariantSku = selectedColor && selectedSize
+    ? getVariantSku(product, selectedColor.name, selectedSize)
+    : null
+  const inCart = currentVariantSku ? isInCart(product.id, currentVariantSku) : false
   const discount = product.originalPrice ? getDiscountPercent(product.originalPrice, product.price) : 0
 
   const handleColorSelect = (c: ProductColor) => {
     setSelectedColor(c)
-    // Reset size if not available for this color
     if (selectedSize && getVariantStock(product, c.name, selectedSize) === 0) {
       setSelectedSize(null)
     }
@@ -63,11 +65,12 @@ export function ProductDetails({ product }: { product: Product }) {
       toast.error(`Estoque insuficiente. Disponível: ${currentStock} un.`)
       return
     }
-    const ok = addItem(product, selectedSize, selectedColor, quantity)
-    if (!ok) {
-      toast.error("Não foi possível adicionar. Verifique o estoque desta variação.")
+    const sku = getVariantSku(product, selectedColor.name, selectedSize)
+    if (!sku) {
+      toast.error("Variante não encontrada.")
       return
     }
+    addItem(product.id, sku, quantity, product.price)
     toast.success("Adicionado à sacola!", { description: `${product.name} — ${selectedSize} — ${selectedColor.name}` })
   }
 
@@ -197,11 +200,24 @@ export function ProductDetails({ product }: { product: Product }) {
             {/* Composition & Care */}
             <AccordionItem title="Composição e cuidados">
               <ul className="space-y-1.5 text-xs text-muted-foreground">
-                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> 100% algodão premium</li>
-                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Lavar à máquina (30°C)</li>
-                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Não usar alvejante</li>
-                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Secar à sombra</li>
-                <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Passar em temperatura média</li>
+                {product.composition && (
+                  <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> {product.composition}</li>
+                )}
+                {product.fit && (
+                  <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Modelagem: {product.fit}</li>
+                )}
+                {product.care && product.care.length > 0
+                  ? product.care.map((c, i) => (
+                      <li key={i} className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> {c}</li>
+                    ))
+                  : (
+                    <>
+                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Lavar à máquina (30°C)</li>
+                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Não usar alvejante</li>
+                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Secar à sombra</li>
+                    </>
+                  )
+                }
               </ul>
             </AccordionItem>
 
@@ -211,10 +227,23 @@ export function ProductDetails({ product }: { product: Product }) {
                 <table className="w-full text-[10px] sm:text-xs">
                   <thead><tr className="border-b text-left text-muted-foreground"><th className="py-1 pr-4 font-medium">Tam</th><th className="py-1 pr-4 font-medium">Largura</th><th className="py-1 pr-4 font-medium">Comprimento</th></tr></thead>
                   <tbody>
-                    <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">P</td><td className="py-1.5 pr-4 text-muted-foreground">50cm</td><td className="py-1.5 text-muted-foreground">68cm</td></tr>
-                    <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">M</td><td className="py-1.5 pr-4 text-muted-foreground">52cm</td><td className="py-1.5 text-muted-foreground">70cm</td></tr>
-                    <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">G</td><td className="py-1.5 pr-4 text-muted-foreground">54cm</td><td className="py-1.5 text-muted-foreground">72cm</td></tr>
-                    <tr><td className="py-1.5 pr-4 font-medium">GG</td><td className="py-1.5 pr-4 text-muted-foreground">58cm</td><td className="py-1.5 text-muted-foreground">74cm</td></tr>
+                    {product.sizeGuide && product.sizeGuide.length > 0
+                      ? product.sizeGuide.map((sg, i) => (
+                          <tr key={i} className="border-b border-border/30">
+                            <td className="py-1.5 pr-4 font-medium">{sg.size}</td>
+                            <td className="py-1.5 pr-4 text-muted-foreground">{sg.width}</td>
+                            <td className="py-1.5 text-muted-foreground">{sg.length}</td>
+                          </tr>
+                        ))
+                      : (
+                        <>
+                          <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">P</td><td className="py-1.5 pr-4 text-muted-foreground">50cm</td><td className="py-1.5 text-muted-foreground">68cm</td></tr>
+                          <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">M</td><td className="py-1.5 pr-4 text-muted-foreground">52cm</td><td className="py-1.5 text-muted-foreground">70cm</td></tr>
+                          <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">G</td><td className="py-1.5 pr-4 text-muted-foreground">54cm</td><td className="py-1.5 text-muted-foreground">72cm</td></tr>
+                          <tr><td className="py-1.5 pr-4 font-medium">GG</td><td className="py-1.5 pr-4 text-muted-foreground">58cm</td><td className="py-1.5 text-muted-foreground">74cm</td></tr>
+                        </>
+                      )
+                    }
                   </tbody>
                 </table>
                 <Link href="/guia-de-medidas" className="inline-flex items-center gap-1 text-[10px] font-medium text-foreground underline underline-offset-2">Ver guia completo <Ruler className="h-3 w-3" /></Link>

@@ -14,6 +14,7 @@
 import type { Product, ProductVariant } from "@/lib/data/products"
 import { getProductById } from "@/lib/services/products-repo"
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase"
+import { isProduction } from "@/lib/env"
 
 // ===== Tipos =====
 
@@ -263,6 +264,9 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   // Persistência
   const sb = getSupabase()
   if (!sb) {
+    if (isProduction()) {
+      return { ok: false, error: { code: "DB_ERROR", message: "Supabase não configurado. Pedidos não podem ser criados sem banco em produção." } as CreateOrderError }
+    }
     return createOrderInMemory(input, resolvedItems, subtotal, total, name, whatsapp, email)
   }
   return createOrderInSupabase(sb, input, resolvedItems, subtotal, total, name, whatsapp, email)

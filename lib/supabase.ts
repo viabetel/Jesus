@@ -23,6 +23,7 @@ if (url && serviceKey) {
   })
 }
 
+/** Retorna o cliente Supabase ou null se não configurado. Nunca lança. */
 export function getSupabase(): SupabaseClient | null {
   return client
 }
@@ -31,11 +32,10 @@ export function isSupabaseConfigured(): boolean {
   return client !== null
 }
 
+/** Lança se Supabase não estiver configurado. Usar com cuidado — prefira getSupabase() + fallback. */
 export function requireSupabase(): SupabaseClient {
   if (!client) {
-    throw new Error(
-      "Supabase não configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_KEY nas variáveis de ambiente."
-    )
+    throw new Error("Supabase não configurado.")
   }
   return client
 }

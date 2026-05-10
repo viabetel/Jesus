@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    // Expõe a fase do build pra que lib/env.ts saiba se está em build ou runtime
+    NEXT_PHASE: process.env.NEXT_PHASE ?? "",
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com", pathname: "/d/**" },

@@ -22,6 +22,14 @@ export type Product = {
   images: string[]; video?: string
   isNew?: boolean; isPromotion?: boolean; isBestseller?: boolean
   tags?: string[]
+  /** Composição / material (ex: "100% algodão penteado 30.1") */
+  composition?: string
+  /** Modelagem / fit (ex: "Regular fit, gola redonda") */
+  fit?: string
+  /** Cuidados de lavagem */
+  care?: string[]
+  /** Guia de medidas por tamanho */
+  sizeGuide?: { size: string; width: string; length: string }[]
 }
 
 // Computed helpers from variants

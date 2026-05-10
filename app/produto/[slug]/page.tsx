@@ -5,18 +5,12 @@ import { Footer } from "@/components/layout/footer"
 import { ProductDetails } from "@/components/products/product-details"
 import { RelatedProducts } from "@/components/products/related-products"
 import { getPublicProductBySlug, getPublicProducts } from "@/lib/services/public-catalog"
-import { getAllProducts } from "@/lib/services/products-repo"
 import { getTotalStock } from "@/lib/data/products"
 
 type Props = { params: Promise<{ slug: string }> }
 
+// Página dinâmica — sempre lê do banco. Sem generateStaticParams.
 export const dynamic = "force-dynamic"
-export const revalidate = 60
-
-export async function generateStaticParams() {
-  const products = await getAllProducts({ includeAll: true })
-  return products.map(p => ({ slug: p.slug }))
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params

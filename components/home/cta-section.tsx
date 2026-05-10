@@ -12,9 +12,9 @@ export function CtaSection() {
           }} />
           <div className="relative">
             <div className="mx-auto mb-4 h-px w-10 bg-[#C2A87D]" />
-            <h2 className="font-serif text-xl font-bold sm:text-2xl lg:text-4xl">Gostou de alguma peça?</h2>
+            <h2 className="font-serif text-xl font-bold sm:text-2xl lg:text-4xl">Pronto pra vestir propósito?</h2>
             <p className="mx-auto mt-3 max-w-md text-xs text-[#FAF9F6]/50 sm:text-sm">
-              Monte sua sacola e fale com a Fashion Store pelo WhatsApp. Estamos prontos para te atender!
+              Monte sua sacola no catálogo e finalize pelo WhatsApp. Atendimento pessoal, pagamento flexível e entrega combinada.
             </p>
             <a href={createWhatsAppLink(WHATSAPP_NUMBER, "Olá! Vim pelo site da Fashion Store e gostaria de finalizar meu pedido.")} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block sm:mt-8">
               <Button size="lg" className="h-11 gap-2 rounded-full bg-[#25D366] px-8 text-xs font-semibold uppercase tracking-wider text-white hover:bg-[#1DA851] sm:h-12 sm:text-sm">

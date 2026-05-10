@@ -18,6 +18,7 @@ import {
   type ProductBadge,
 } from "@/lib/data/products"
 import { getSupabase } from "@/lib/supabase"
+import { canUseMemoryFallback } from "@/lib/env"
 
 // ============================================================
 // Tipos para criação / edição
@@ -41,6 +42,10 @@ export type ProductInput = {
   isBestseller?: boolean
   tags?: string[]
   sortOrder?: number
+  composition?: string | null
+  fit?: string | null
+  care?: string[] | null
+  sizeGuide?: { size: string; width: string; length: string }[] | null
 }
 
 export type ProductPatch = Partial<ProductInput>
@@ -96,6 +101,10 @@ function mapProductRow(
     isPromotion: Boolean(row.is_promotion),
     isBestseller: Boolean(row.is_bestseller),
     tags: (row.tags as string[]) ?? [],
+    composition: (row.composition as string) ?? undefined,
+    fit: (row.fit as string) ?? undefined,
+    care: Array.isArray(row.care) ? row.care as string[] : (typeof row.care === "string" && row.care ? [row.care] : undefined),
+    sizeGuide: Array.isArray(row.size_guide) ? row.size_guide as { size: string; width: string; length: string }[] : undefined,
     variants,
   }
 }
@@ -119,6 +128,10 @@ function inputToDb(input: ProductPatch): Record<string, unknown> {
   if (input.isBestseller !== undefined) out.is_bestseller = input.isBestseller
   if (input.tags !== undefined) out.tags = input.tags
   if (input.sortOrder !== undefined) out.sort_order = input.sortOrder
+  if (input.composition !== undefined) out.composition = input.composition
+  if (input.fit !== undefined) out.fit = input.fit
+  if (input.care !== undefined) out.care = input.care
+  if (input.sizeGuide !== undefined) out.size_guide = input.sizeGuide
   return out
 }
 
@@ -136,7 +149,9 @@ export async function getAllProducts(
 ): Promise<Product[]> {
   const sb = getSupabase()
   if (!sb) {
-    // Fallback dev: usa o array estático
+    if (!canUseMemoryFallback()) {
+      console.error("[PRODUÇÃO] Supabase não configurado. Catálogo caindo para products.ts estático. Produtos editados no admin NÃO serão refletidos.")
+    }
     return legacyProducts
   }
 
@@ -168,6 +183,9 @@ export async function getAllProducts(
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const sb = getSupabase()
   if (!sb) {
+    if (!canUseMemoryFallback()) {
+      console.error("[PRODUÇÃO] Supabase não configurado. getProductBySlug caindo para products.ts.")
+    }
     return legacyProducts.find((p) => p.slug === slug) ?? null
   }
   const { data: row, error } = await sb
@@ -188,6 +206,9 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 export async function getProductById(id: string): Promise<Product | null> {
   const sb = getSupabase()
   if (!sb) {
+    if (!canUseMemoryFallback()) {
+      console.error("[PRODUÇÃO] Supabase não configurado. getProductById caindo para products.ts.")
+    }
     return legacyProducts.find((p) => p.id === id) ?? null
   }
   const { data: row, error } = await sb
@@ -240,27 +261,54 @@ function requireSb() {
   return sb
 }
 
-/** Versão que devolve RepoResult em vez de lançar. */
+/** Versão pra ESCRITA: retorna erro se não tiver Supabase (não fallback). */
 function tryGetSb(): { ok: true; sb: NonNullable<ReturnType<typeof getSupabase>> } | { ok: false; error: { code: string; message: string } } {
   const sb = getSupabase()
-  if (!sb) {
-    return {
-      ok: false,
-      error: {
-        code: "NO_DB",
-        message: "Supabase não configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_KEY.",
-      },
-    }
+  if (sb) return { ok: true, sb }
+  return {
+    ok: false,
+    error: {
+      code: "NO_DB",
+      message: "Supabase não configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_KEY.",
+    },
   }
-  return { ok: true, sb }
 }
 
 /**
  * Cria um produto novo. Retorna erro tipado em vez de lançar.
  */
+import { canPublish, getMissingRequirements } from "@/lib/services/publish-checklist"
+
 export async function createProduct(input: ProductInput): Promise<RepoResult<Product>> {
   const validation = validateProductInput(input)
   if (validation) return { ok: false, error: { code: "INVALID", message: validation } }
+
+  // Produto novo DEVE nascer como rascunho por padrão.
+  // Se tentarem criar já como ativo, checklist precisa passar.
+  const finalStatus = input.status ?? "rascunho"
+
+  if (finalStatus === "ativo") {
+    // Monta um produto "simulado" pra checar o checklist
+    const simulated = {
+      ...input,
+      id: "temp",
+      status: "ativo" as const,
+      variants: [],       // produto novo não tem variantes ainda
+      images: input.images ?? [],
+      care: input.care ?? [],
+      sizeGuide: input.sizeGuide ?? [],
+    } as Product
+    if (!canPublish(simulated)) {
+      const missing = getMissingRequirements(simulated)
+      return {
+        ok: false,
+        error: {
+          code: "INCOMPLETE",
+          message: `Produto incompleto para publicação. Falta: ${missing.join(", ")}. Crie como rascunho primeiro, adicione o que falta e depois ative.`,
+        },
+      }
+    }
+  }
 
   const dbResult = tryGetSb()
   if (!dbResult.ok) return dbResult
@@ -277,7 +325,7 @@ export async function createProduct(input: ProductInput): Promise<RepoResult<Pro
 
   const row: Record<string, unknown> = {
     id,
-    status: input.status ?? "ativo",
+    status: finalStatus,
     ...inputToDb(input),
   }
 
@@ -285,6 +333,7 @@ export async function createProduct(input: ProductInput): Promise<RepoResult<Pro
   if (error) return { ok: false, error: { code: "DB", message: error.message } }
   return { ok: true, data: mapProductRow(data, []) }
 }
+
 
 export async function updateProduct(
   id: string,
@@ -296,6 +345,40 @@ export async function updateProduct(
   }
   if (patch.price !== undefined && patch.price <= 0) {
     return { ok: false, error: { code: "INVALID", message: "Preço inválido" } }
+  }
+
+  // Se está tentando ativar (ou já é ativo e continua), valida checklist
+  if (patch.status === "ativo" || (patch.status === undefined)) {
+    const current = await getProductById(id)
+    if (current) {
+      const merged = { ...current, ...patch } as Product
+
+      // Carregar mídia estruturada pra checar cover real
+      let structuredMedia: { role: string; kind: string }[] = []
+      const sb = getSupabase()
+      if (sb) {
+        const { data: mediaRows } = await sb
+          .from("product_media")
+          .select("role, kind")
+          .eq("product_id", id)
+        if (mediaRows) structuredMedia = mediaRows as { role: string; kind: string }[]
+      }
+
+      const finalStatus = patch.status ?? current.status
+      if (finalStatus === "ativo") {
+        const checkInput = { ...merged, structuredMedia }
+        if (!canPublish(checkInput)) {
+          const missing = getMissingRequirements(checkInput)
+          return {
+            ok: false,
+            error: {
+              code: "INCOMPLETE",
+              message: `Produto incompleto. Falta: ${missing.join(", ")}`
+            }
+          }
+        }
+      }
+    }
   }
 
   const dbResult = tryGetSb()

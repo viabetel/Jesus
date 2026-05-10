@@ -27,9 +27,11 @@ type Props = {
   productId: string
   /** Imagens legadas no campo `images[]` do produto — pra mostrar botão de migração */
   legacyImagesCount?: number
+  /** Callback quando a mídia muda (upload, delete, reorder, role change, migrate) */
+  onMediaChange?: (media: ProductMedia[]) => void
 }
 
-export function MediaManager({ productId, legacyImagesCount = 0 }: Props) {
+export function MediaManager({ productId, legacyImagesCount = 0, onMediaChange }: Props) {
   const [media, setMedia] = useState<ProductMedia[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -41,6 +43,11 @@ export function MediaManager({ productId, legacyImagesCount = 0 }: Props) {
   const [dropTargetId, setDropTargetId] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
+
+  // Notifica parent quando mídia muda (pra checklist visual atualizar)
+  useEffect(() => {
+    if (!loading && onMediaChange) onMediaChange(media)
+  }, [media, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Drive importer state
   const [driveOpen, setDriveOpen] = useState(false)
