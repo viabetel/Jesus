@@ -27,6 +27,7 @@ export function LookbookSection() {
                 alt={it.t}
                 fill
                 className="object-cover transition-transform duration-[1200ms] group-hover:scale-[1.05]"
+                quality={95}
                 sizes="(max-width:768px) 100vw, 33vw"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
               />

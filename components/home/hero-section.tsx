@@ -12,6 +12,7 @@ const slides = [
     title: "Camisetas cristãs para usar sua fé no dia a dia",
     sub: "Peças confortáveis, estilosas e com mensagens de propósito.",
     img: "/hero/hero-main.jpg",
+    position: "object-[82%_center]",
     cta: "Ver Catálogo",
     ctaHref: "/produtos",
   },
@@ -20,6 +21,7 @@ const slides = [
     title: "Modelagem ampla, presença e propósito",
     sub: "Camisetas oversized para looks casuais com identidade cristã.",
     img: "/hero/hero-oversized.jpg",
+    position: "object-[82%_center]",
     cta: "Ver Oversized",
     ctaHref: "/produtos?categoria=oversized",
   },
@@ -28,6 +30,7 @@ const slides = [
     title: "Escolha sua peça e finalize pelo WhatsApp",
     sub: "Atendimento direto, compra simples e peças disponíveis para envio ou retirada.",
     img: "/hero/hero-pronta-entrega.jpg",
+    position: "object-[80%_center]",
     cta: "Comprar pelo WhatsApp",
     ctaHref: createWhatsAppLink(WHATSAPP_NUMBER, "Olá! Vi o catálogo e quero uma peça de pronta entrega."),
     external: true,
@@ -58,8 +61,8 @@ export function HeroSection() {
             alt=""
             fill
             priority={idx === 0}
-            quality={80}
-            className={`object-cover transition-transform ease-out duration-[8000ms] ${
+            quality={95}
+            className={`object-cover ${s.position} transition-transform ease-out duration-[8000ms] ${
               idx === i ? "scale-[1.06]" : "scale-100"
             }`}
             sizes="100vw"

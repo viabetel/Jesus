@@ -14,7 +14,7 @@ const nextConfig = {
       { protocol: "https", hostname: "*.supabase.in" },
     ],
     formats: ["image/avif", "image/webp"],
-    qualities: [75, 80, 85],
+    qualities: [75, 80, 85, 95],
   },
 }
 export default nextConfig

@@ -38,6 +38,7 @@ export function ProntaEntregaBand() {
               alt="Pronta entrega"
               fill
               className="object-cover"
+              quality={95}
               sizes="(max-width:1024px) 50vw, 25vw"
             />
           </div>
@@ -47,6 +48,7 @@ export function ProntaEntregaBand() {
               alt="Pronta entrega"
               fill
               className="object-cover object-left"
+              quality={95}
               sizes="(max-width:1024px) 50vw, 25vw"
             />
           </div>

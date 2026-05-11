@@ -11,6 +11,7 @@ export function FinalCTASection() {
         alt=""
         fill
         className="object-cover opacity-50"
+        quality={95}
         sizes="100vw"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20" />

@@ -29,6 +29,7 @@ export function CollectionsSection() {
                 alt={it.t}
                 fill
                 className="object-cover transition-transform duration-[1100ms] group-hover:scale-[1.06]"
+                quality={95}
                 sizes="(max-width:640px) 50vw, 25vw"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
               />

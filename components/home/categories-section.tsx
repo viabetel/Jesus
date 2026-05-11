@@ -41,6 +41,7 @@ export function CategoryStrip() {
                 alt={it.label}
                 fill
                 className="object-cover transition-transform duration-[1100ms] group-hover:scale-[1.08]"
+                quality={95}
                 sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 16vw"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
               />

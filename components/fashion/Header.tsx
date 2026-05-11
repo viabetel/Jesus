@@ -262,6 +262,7 @@ export function FashionHeader({ transparent = false }: { transparent?: boolean }
                     alt={megaCurrent.hero.title}
                     fill
                     className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]"
+                    quality={95}
                     sizes="440px"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent"/>
