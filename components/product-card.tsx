@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, Play, Eye, ShoppingBag } from "lucide-react"
+import { Heart, Play, MessageCircle } from "lucide-react"
 import { useFavorites } from "@/contexts/favorites-context"
 import type { Product } from "@/lib/data/products"
 import { getProductColors, getProductSizes, getTotalStock } from "@/lib/data/products"
@@ -17,7 +17,7 @@ interface CardProduct extends Product {
   hasVideo?: boolean
 }
 
-export function ProductCard({ product, featured = false }: { product: CardProduct; featured?: boolean }) {
+export function ProductCard({ product }: { product: CardProduct }) {
   const [hovered, setHovered] = useState(false)
   const { toggleFavorite, isFavorite } = useFavorites()
 
@@ -26,12 +26,19 @@ export function ProductCard({ product, featured = false }: { product: CardProduc
   const isOutOfStock = totalStock === 0
   const discount = product.originalPrice ? getDiscountPercent(product.originalPrice, product.price) : 0
   const colors = getProductColors(product)
-  const sizes = getProductSizes(product)
+  const hasVideo = product.hasVideo ?? !!product.video
 
   const coverImg = product.coverImage ?? product.images[0]
   const hoverImg = product.hoverImage ?? product.images[1]
   const hasHover = !!hoverImg
-  const hasVideo = product.hasVideo ?? !!product.video
+
+  // Badge logic: olive for "Pronta Entrega", tan for "Lançamento"/"Mais Vendido", red for promo
+  const badgeText = product.badge || (product.isPromotion ? "Promoção" : product.isNew ? "Lançamento" : totalStock > 0 ? "Pronta Entrega" : null)
+  const badgeClass = product.isPromotion || discount > 0
+    ? "bg-[var(--promo)]"
+    : badgeText === "Lançamento" || badgeText === "Mais vendida" || product.isBestseller
+      ? "status-pill--tan"
+      : "status-pill--olive"
 
   const handleFav = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
@@ -40,158 +47,131 @@ export function ProductCard({ product, featured = false }: { product: CardProduc
   }
 
   return (
-    <Link
-      href={`/produto/${product.slug}`}
-      className="group block min-w-0"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* ═══ IMAGE ═══ */}
-      <div className={cn(
-        "relative overflow-hidden bg-[#f3f0ea]",
-        featured ? "aspect-[3/4] rounded-xl" : "aspect-[4/5] rounded-lg"
-      )}>
-        {/* Cover */}
-        <Image
-          src={coverImg || "/brand/placeholder-product.svg"}
-          alt={product.name}
-          fill
-          className={cn(
-            "object-cover transition-all duration-700",
-            hovered && hasHover ? "scale-105 opacity-0" : "scale-100 opacity-100"
-          )}
-          sizes={featured ? "(max-width:640px) 100vw, 50vw" : "(max-width:640px) 50vw, 25vw"}
-        />
-        {/* Hover image */}
-        {hasHover && (
+    <div className="group">
+      <Link
+        href={`/produto/${product.slug}`}
+        className="block"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* Image */}
+        <div className="relative aspect-[3/4] bg-[var(--stone)] overflow-hidden">
           <Image
-            src={hoverImg!}
-            alt={`${product.name} — verso`}
+            src={coverImg || "/brand/placeholder-product.svg"}
+            alt={product.name}
             fill
             className={cn(
-              "object-cover transition-all duration-700",
-              hovered ? "scale-100 opacity-100" : "scale-95 opacity-0"
+              "object-cover transition-all duration-[1200ms]",
+              hovered && hasHover ? "scale-105 opacity-0" : "scale-100 opacity-100"
             )}
-            sizes={featured ? "(max-width:640px) 100vw, 50vw" : "(max-width:640px) 50vw, 25vw"}
+            sizes="(max-width:640px) 50vw, 25vw"
           />
-        )}
+          {hasHover && (
+            <Image
+              src={hoverImg!}
+              alt={`${product.name} — verso`}
+              fill
+              className={cn(
+                "object-cover transition-all duration-[1200ms]",
+                hovered ? "scale-100 opacity-100" : "scale-95 opacity-0"
+              )}
+              sizes="(max-width:640px) 50vw, 25vw"
+            />
+          )}
 
-        {/* Badges — top left */}
-        <div className="absolute left-2 top-2 flex flex-col gap-1 sm:left-2.5 sm:top-2.5">
+          {/* Badge */}
+          {badgeText && (
+            <span className={cn("absolute top-3 left-3 px-3 py-[5px] text-[10px] font-medium text-white tracking-[0.02em] sm:top-4 sm:left-4 sm:text-[11px]", badgeClass)}>
+              {badgeText}
+            </span>
+          )}
+
+          {/* Discount badge */}
           {discount > 0 && (
-            <span className="rounded-md bg-red-600 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm sm:text-[10px]">
-              -{discount}%
+            <span className="absolute top-3 right-12 px-2.5 py-1 text-[10px] font-semibold tracking-wide bg-[var(--promo)] text-white sm:top-4 sm:right-14 sm:text-[11px]">
+              −{discount}%
             </span>
           )}
-          {product.badge && product.badge !== "Promoção" && (
-            <span className="rounded-md bg-foreground px-2 py-0.5 text-[9px] font-bold text-background shadow-sm sm:text-[10px]">
-              {product.badge}
-            </span>
-          )}
-          {totalStock > 0 && totalStock <= 5 && !discount && (
-            <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm sm:text-[10px]">
-              Últimas {totalStock}!
-            </span>
-          )}
-        </div>
 
-        {/* Favorite — top right */}
-        <button
-          className={cn(
-            "absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full transition-all sm:right-2.5 sm:top-2.5 sm:h-9 sm:w-9",
-            isFav ? "bg-white shadow-md" : "bg-white/80 opacity-0 shadow-sm group-hover:opacity-100",
-            "sm:opacity-100 sm:bg-white/70"
-          )}
-          onClick={handleFav}
-          aria-label="Favoritar"
-        >
-          <Heart className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isFav ? "fill-red-500 text-red-500" : "text-neutral-500")} />
-        </button>
-
-        {/* Video badge */}
-        {hasVideo && (
-          <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white backdrop-blur-sm sm:bottom-2.5 sm:left-2.5 sm:text-[9px]">
-            <Play className="h-2.5 w-2.5 fill-white" /> Vídeo
-          </span>
-        )}
-
-        {/* Out of stock overlay */}
-        {isOutOfStock && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
-            <span className="rounded-full bg-neutral-900 px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white">
-              Esgotado
-            </span>
-          </div>
-        )}
-
-        {/* Desktop hover CTA */}
-        <div className={cn(
-          "absolute inset-x-0 bottom-0 flex justify-center pb-3 transition-all duration-300",
-          hovered && !isOutOfStock ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
-        )}>
-          <span className="flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-background shadow-xl sm:text-[11px]">
-            <Eye className="h-3 w-3" /> Ver produto
-          </span>
-        </div>
-      </div>
-
-      {/* ═══ INFO ═══ */}
-      <div className="mt-2.5 min-w-0 space-y-1.5 px-0.5 sm:mt-3">
-        {/* Name — bigger, readable */}
-        <h3 className="line-clamp-2 min-w-0 break-words text-[12px] font-semibold leading-snug sm:text-[14px]">
-          {product.name}
-        </h3>
-
-        {/* Colors */}
-        {colors.length > 0 && (
-          <div className="flex items-center gap-1">
-            {colors.slice(0, 5).map(c => (
-              <span
-                key={c.name}
-                className="h-3 w-3 rounded-full border border-border/50 sm:h-3.5 sm:w-3.5"
-                style={{ backgroundColor: c.value }}
-                title={c.name}
-              />
-            ))}
-            {colors.length > 5 && (
-              <span className="text-[9px] text-muted-foreground">+{colors.length - 5}</span>
+          {/* Favorite */}
+          <button
+            className={cn(
+              "absolute top-3 right-3 h-8 w-8 grid place-items-center transition sm:top-4 sm:right-4 sm:h-9 sm:w-9",
+              isFav ? "bg-white" : "bg-white/85 hover:bg-white"
             )}
-          </div>
-        )}
+            onClick={handleFav}
+            aria-label="Favoritar"
+          >
+            <Heart size={14} className={cn(isFav ? "fill-[var(--promo)] text-[var(--promo)]" : "text-[var(--ink)]")} strokeWidth={1.5} />
+          </button>
 
-        {/* Sizes */}
-        {sizes.length > 0 && (
-          <div className="flex items-center gap-1">
-            {sizes.map(s => (
-              <span key={s} className="rounded border border-border/40 px-1.5 py-0.5 text-[8px] font-medium text-muted-foreground sm:text-[9px]">
-                {s}
-              </span>
-            ))}
-          </div>
-        )}
+          {/* Video badge */}
+          {hasVideo && (
+            <span className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/60 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white backdrop-blur-sm sm:bottom-4 sm:left-4 sm:text-[9px]">
+              <Play size={10} fill="white" /> Vídeo
+            </span>
+          )}
 
-        {/* Price — prominent */}
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          {/* Out of stock */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
+              <span className="caps text-[10px] bg-[var(--ink)] text-white px-4 py-2 sm:text-[11px]">Esgotado</span>
+            </div>
+          )}
+
+          {/* Hover CTA */}
+          <div className={cn(
+            "absolute inset-x-3 bottom-3 transition-all duration-300 sm:inset-x-4 sm:bottom-4",
+            hovered && !isOutOfStock ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+          )}>
+            <span className="w-full bg-white text-[var(--ink)] caps text-[9px] py-2.5 hover:bg-[var(--ink)] hover:text-white transition flex items-center justify-center gap-2 sm:text-[10.5px] sm:py-3">
+              <MessageCircle size={13} /> Compra Rápida
+            </span>
+          </div>
+        </div>
+      </Link>
+
+      {/* Info */}
+      <div className="pt-4 pb-2 px-1 text-center sm:pt-5">
+        <Link href={`/produto/${product.slug}`}>
+          <h3 className="caps text-[10px] tracking-[0.14em] text-[var(--ink)] line-clamp-2 sm:text-[11.5px]">{product.name}</h3>
+        </Link>
+
+        <div className="mt-1.5 flex items-baseline justify-center gap-2 sm:mt-2">
           {product.originalPrice && (
-            <span className="text-[11px] text-muted-foreground/60 line-through sm:text-xs">
+            <span className="text-[11px] text-[var(--muted-foreground)] line-through sm:text-[12.5px]">
               {formatPrice(product.originalPrice)}
             </span>
           )}
-          <span className={cn(
-            "text-[15px] font-bold sm:text-[17px]",
-            product.originalPrice ? "text-red-600" : "text-foreground"
-          )}>
+          <span className={cn("text-[14px] font-medium sm:text-[15px]", product.originalPrice ? "text-[var(--promo)]" : "text-[var(--ink)]")}>
             {formatPrice(product.price)}
           </span>
         </div>
 
-        {/* Mobile action — always visible */}
-        <div className="flex items-center gap-1.5 pt-0.5 sm:hidden">
-          <span className="flex items-center gap-1 rounded-full bg-muted/50 px-3 py-1.5 text-[10px] font-semibold text-foreground/60">
-            <ShoppingBag className="h-3 w-3" /> Ver produto
-          </span>
-        </div>
+        {product.price >= 30 && (
+          <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5 sm:text-[11.5px]">
+            ou em <span className="font-semibold text-[var(--ink)]/85">3x de {formatPrice(product.price / 3)}</span> sem juros
+          </p>
+        )}
+
+        {/* Colors */}
+        {colors.length > 0 && (
+          <div className="mt-2.5 flex items-center justify-center gap-1.5 flex-wrap sm:mt-3">
+            {colors.slice(0, 6).map((c, ci) => (
+              <span
+                key={c.name}
+                className={cn(
+                  "h-[14px] w-[14px] rounded-full transition sm:h-[16px] sm:w-[16px]",
+                  ci === 0 ? "ring-1 ring-[var(--ink)] ring-offset-2" : "",
+                  c.value === "#FFFFFF" ? "border border-black/15" : ""
+                )}
+                style={{ background: c.value }}
+                title={c.name}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </Link>
+    </div>
   )
 }

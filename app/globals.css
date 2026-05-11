@@ -6,28 +6,39 @@
 /* ===== HEX FALLBACKS (all browsers) ===== */
 :root {
   --background: #fafafa;
-  --foreground: #171717;
+  --foreground: #1A1A1A;
   --card: #ffffff;
-  --card-foreground: #171717;
+  --card-foreground: #1A1A1A;
   --popover: #ffffff;
-  --popover-foreground: #171717;
-  --primary: #171717;
+  --popover-foreground: #1A1A1A;
+  --primary: #1A1A1A;
   --primary-foreground: #fafafa;
   --secondary: #f0f0f0;
   --secondary-foreground: #2e2e2e;
-  --muted: #ebebeb;
+  --muted: #F2EFEA;
   --muted-foreground: #6b6b6b;
   --accent: #c2a87d;
   --accent-foreground: #2e2e2e;
   --destructive: #e5484d;
   --destructive-foreground: #fafafa;
-  --border: #e5e5e5;
+  --border: #E5E0DA;
   --input: #eaeaea;
   --ring: #6b6b6b;
   --radius: 0.625rem;
   --gold: #c2a87d;
   --champagne: #e8dcc8;
   --graphite: #4a4a4a;
+
+  /* FASHION tokens (public store layer) */
+  --cream: #F5F1EC;
+  --stone: #EDE6DD;
+  --olive: #6D7A3F;
+  --olive-soft: #8A9657;
+  --tan: #B89B7A;
+  --ink: #1A1A1A;
+  --fg-soft: #2E2E2E;
+  --promo: #B91C1C;
+  --wa: #25D366;
 }
 
 /* ===== OKLCH UPGRADE (modern browsers) ===== */
@@ -56,8 +67,8 @@
 }
 
 @theme inline {
-  --font-sans: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif: 'DM Serif Display', 'Playfair Display', 'Georgia', serif;
+  --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Playfair Display', 'Georgia', serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -196,4 +207,101 @@ header [class*="absolute"][class*="top-full"] > div {
 @keyframes promo-fade {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+/* ===== FASHION STORE — Editorial utilities ===== */
+
+/* Uppercase navigation/button text */
+.caps {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+}
+.caps-light {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 400;
+}
+.eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+/* Serif italic display (FASHION hero/section titles) */
+.font-serif-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 700;
+}
+
+/* Status pills (olive = pronta entrega, tan = sob encomenda) */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.status-pill--olive { background: var(--olive); }
+.status-pill--tan { background: var(--tan); }
+
+/* Mega menu stagger animation */
+.mega-tab, .mega-link, .mega-feature {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.mega-open .mega-tab { animation: megaIn 520ms cubic-bezier(0.22,1,0.36,1) forwards; }
+.mega-open .mega-link { animation: megaIn 520ms cubic-bezier(0.22,1,0.36,1) forwards; }
+.mega-open .mega-feature { animation: megaFeatureIn 700ms cubic-bezier(0.22,1,0.36,1) 80ms forwards; }
+
+@keyframes megaIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes megaFeatureIn {
+  0% { opacity: 0; transform: scale(0.985); clip-path: inset(0 0 100% 0); }
+  100% { opacity: 1; transform: scale(1); clip-path: inset(0 0 0 0); }
+}
+
+/* Hero carousel fill */
+@keyframes dashfill {
+  from { transform: scaleX(0); transform-origin: left; }
+  to { transform: scaleX(1); transform-origin: left; }
+}
+
+/* Mobile filter drawer slide */
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Custom scrollbar for filter panel */
+.filter-scroll::-webkit-scrollbar { width: 6px; }
+.filter-scroll::-webkit-scrollbar-thumb { background: #E5E0DA; }
+
+/* Range slider thumbs */
+.range-thumb::-webkit-slider-thumb {
+  appearance: none;
+  pointer-events: auto;
+  height: 16px; width: 16px;
+  border-radius: 50%;
+  background: #1A1A1A;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #1A1A1A;
+  cursor: grab;
+}
+.range-thumb::-moz-range-thumb {
+  height: 16px; width: 16px;
+  border-radius: 50%;
+  background: #1A1A1A;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #1A1A1A;
+  pointer-events: auto;
+  cursor: grab;
 }

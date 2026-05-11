@@ -155,3 +155,11 @@ export function filterLowStock(products: PublicProduct[]): PublicProduct[] {
     return s > 0 && s <= 10
   }).slice(0, 3)
 }
+
+export function filterBestsellers(products: PublicProduct[]): PublicProduct[] {
+  return products.filter(p => p.isBestseller).slice(0, 4)
+}
+
+export function filterProntaEntrega(products: PublicProduct[]): PublicProduct[] {
+  return products.filter(p => getTotalStock(p) > 0).slice(0, 8)
+}

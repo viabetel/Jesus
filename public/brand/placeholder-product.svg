@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="533" viewBox="0 0 400 533" fill="none">
-  <rect width="400" height="533" fill="#F5F5F0"/>
-  <rect x="140" y="180" width="120" height="160" rx="4" stroke="#D4D0C8" stroke-width="1.5" fill="none"/>
-  <line x1="170" y1="180" x2="155" y2="155" stroke="#D4D0C8" stroke-width="1.5"/>
-  <line x1="230" y1="180" x2="245" y2="155" stroke="#D4D0C8" stroke-width="1.5"/>
-  <line x1="155" y1="155" x2="245" y2="155" stroke="#D4D0C8" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M180 210 Q200 195 220 210" stroke="#D4D0C8" stroke-width="1.5" fill="none"/>
+  <rect width="400" height="533" fill="#F5F5F0"></rect>
+  <rect x="140" y="180" width="120" height="160" rx="4" stroke="#D4D0C8" stroke-width="1.5" fill="none"></rect>
+  <line x1="170" y1="180" x2="155" y2="155" stroke="#D4D0C8" stroke-width="1.5"></line>
+  <line x1="230" y1="180" x2="245" y2="155" stroke="#D4D0C8" stroke-width="1.5"></line>
+  <line x1="155" y1="155" x2="245" y2="155" stroke="#D4D0C8" stroke-width="1.5" stroke-linecap="round"></line>
+  <path d="M180 210 Q200 195 220 210" stroke="#D4D0C8" stroke-width="1.5" fill="none"></path>
   <text x="200" y="380" text-anchor="middle" font-family="Georgia, serif" font-size="13" fill="#B0AAA0" letter-spacing="3">FASHION STORE</text>
 </svg>
