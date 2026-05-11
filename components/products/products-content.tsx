@@ -79,10 +79,16 @@ export function ProductsContent({ products }: { products: Product[] }) {
     }
     if (selectedCategories.length > 0) {
       result = result.filter(p => {
-        const cat = categories.find(c => c.slug === selectedCategories[0])
+        const slug = selectedCategories[0]
+
+        // Categorias comerciais que não existem no array base `categories`
+        // precisam ser tratadas antes do lookup, senão caem em `return true`
+        // e mostram todos os produtos.
+        if (slug === "lancamentos") return p.isNew
+        if (slug === "promocoes") return p.isPromotion
+
+        const cat = categories.find(c => c.slug === slug)
         if (!cat) return true
-        if (cat.slug === "lancamentos") return p.isNew
-        if (cat.slug === "promocoes") return p.isPromotion
         return p.category === cat.name
       })
     }
@@ -113,7 +119,7 @@ export function ProductsContent({ products }: { products: Product[] }) {
     router.replace(pathname, { scroll: false })
   }
 
-  const hasActiveFilters = search || selectedCategories.length > 0 || selectedSizes.length > 0 || selectedColors.length > 0 || showPromotions || showNewArrivals || priceRange[0] > MIN_PRICE || priceRange[1] < MAX_PRICE
+  const hasActiveFilters = search || urlDestaque || selectedCategories.length > 0 || selectedSizes.length > 0 || selectedColors.length > 0 || showPromotions || showNewArrivals || priceRange[0] > MIN_PRICE || priceRange[1] < MAX_PRICE
 
   const FiltersContent = ({ onApply }: { onApply?: () => void }) => (
     <div className="space-y-5">
@@ -166,7 +172,7 @@ export function ProductsContent({ products }: { products: Product[] }) {
         {hasActiveFilters && (
           <div className="mb-3 flex flex-wrap gap-1">
             {search && <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px]">&ldquo;{search}&rdquo;<button onClick={() => handleSearchChange("")} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button></span>}
-            {selectedCategories.map(cat => (<span key={cat} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px]">{categories.find(c => c.slug === cat)?.name || cat}<button onClick={() => handleCategoryChange(cat, false)}><X className="h-2.5 w-2.5" /></button></span>))}
+            {selectedCategories.map(cat => (<span key={cat} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px]">{categories.find(c => c.slug === cat)?.name || (cat === "lancamentos" ? "Lançamentos" : cat === "promocoes" ? "Promoções" : cat)}<button onClick={() => handleCategoryChange(cat, false)}><X className="h-2.5 w-2.5" /></button></span>))}
             {selectedSizes.map(s => (<span key={s} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px]">{s}<button onClick={() => setSelectedSizes(p => p.filter(x => x !== s))}><X className="h-2.5 w-2.5" /></button></span>))}
             <button onClick={clearFilters} className="text-[10px] text-muted-foreground underline">Limpar</button>
           </div>
