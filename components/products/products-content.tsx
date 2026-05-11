@@ -35,11 +35,17 @@ export function ProductsContent({ products }: { products: Product[] }) {
     return [...seen.entries()].map(([name, value]) => ({ name, value }))
   }, [products])
 
+  // Read all URL params
+  const urlDestaque = searchParams.get("destaque") || ""
+  const urlTamanho = searchParams.get("tamanho") || ""
+  const urlCor = searchParams.get("cor") || ""
+  const urlPrecoMax = searchParams.get("preco_max") || ""
+
   const [search, setSearch] = useState(searchParams.get("busca") || "")
   const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams.get("categoria") ? [searchParams.get("categoria")!] : [])
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([])
-  const [selectedColors, setSelectedColors] = useState<string[]>([])
-  const [priceRange, setPriceRange] = useState([MIN_PRICE, MAX_PRICE])
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(urlTamanho ? [urlTamanho] : [])
+  const [selectedColors, setSelectedColors] = useState<string[]>(urlCor ? [urlCor] : [])
+  const [priceRange, setPriceRange] = useState([MIN_PRICE, urlPrecoMax ? Math.min(Number(urlPrecoMax), MAX_PRICE) : MAX_PRICE])
   const [showPromotions, setShowPromotions] = useState(false)
   const [showNewArrivals, setShowNewArrivals] = useState(false)
   const [sortBy, setSortBy] = useState("recent")
@@ -85,13 +91,17 @@ export function ProductsContent({ products }: { products: Product[] }) {
     if (priceRange[0] > MIN_PRICE || priceRange[1] < MAX_PRICE) result = result.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1])
     if (showPromotions) result = result.filter(p => p.isPromotion)
     if (showNewArrivals) result = result.filter(p => p.isNew)
+    // URL destaque param
+    if (urlDestaque === "mais-vendidos") result = result.filter(p => p.isBestseller)
+    else if (urlDestaque === "pronta-entrega") result = result.filter(p => getTotalStock(p) > 0)
+    else if (urlDestaque === "ultimas-unidades") { const low = result.filter(p => { const s = getTotalStock(p); return s > 0 && s <= 10 }); if (low.length > 0) result = low }
     switch (sortBy) {
       case "price-asc": result.sort((a, b) => a.price - b.price); break
       case "price-desc": result.sort((a, b) => b.price - a.price); break
       case "name": result.sort((a, b) => a.name.localeCompare(b.name)); break
     }
     return result
-  }, [search, selectedCategories, selectedSizes, selectedColors, priceRange, showPromotions, showNewArrivals, sortBy])
+  }, [search, selectedCategories, selectedSizes, selectedColors, priceRange, showPromotions, showNewArrivals, sortBy, urlDestaque, products])
 
   const totalPages = Math.ceil(filteredProducts.length / PER_PAGE)
   const effectivePage = page > totalPages ? 1 : page

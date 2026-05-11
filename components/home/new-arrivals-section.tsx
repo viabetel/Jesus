@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProductCard } from "@/components/product-card"
 import type { Product } from "@/lib/data/products"
@@ -8,26 +8,34 @@ export function NewArrivalsSection({ products: newProducts }: { products: Produc
   if (newProducts.length === 0) return null
 
   return (
-    <section className="bg-muted/30 py-8 sm:py-14 lg:py-24">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-medium tracking-[0.2em] text-[#C2A87D] uppercase">Novidades</p>
-            <h2 className="mt-1 font-serif text-xl font-bold sm:text-2xl lg:text-4xl">Lançamentos</h2>
+    <section className="py-8 sm:py-12 lg:py-16">
+      <div className="mx-auto max-w-7xl px-4 lg:px-6">
+        {/* Header */}
+        <div className="flex items-end justify-between gap-4 mb-5 sm:mb-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 sm:h-9 sm:w-9">
+              <Sparkles className="h-4 w-4 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold sm:text-2xl" style={{ fontFamily: "var(--font-serif)" }}>
+                Últimos lançamentos
+              </h2>
+              <p className="text-[11px] text-muted-foreground sm:text-xs">
+                As peças mais recentes do catálogo.
+              </p>
+            </div>
           </div>
           <Link href="/produtos?categoria=lancamentos">
-            <Button variant="outline" size="sm" className="gap-1.5 rounded-full text-xs sm:gap-2 sm:text-sm">
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-full text-[11px] sm:text-xs">
               Ver todos <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
         </div>
 
-        {/* Mobile: horizontal scroll | Desktop: grid */}
-        <div className="-mx-4 mt-6 flex gap-4 overflow-x-auto px-4 pb-4 scrollbar-hide sm:mx-0 sm:mt-10 sm:grid sm:grid-cols-2 sm:overflow-visible md:grid-cols-3 lg:grid-cols-4 sm:px-0 sm:pb-0 lg:grid-cols-4">
-          {newProducts.map((product) => (
-            <div key={product.id} className="w-[72vw] max-w-[280px] shrink-0 sm:w-auto sm:max-w-none">
-              <ProductCard product={product} />
-            </div>
+        {/* Grid — consistent with featured-section */}
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {newProducts.slice(0, 8).map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>

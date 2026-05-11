@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Percent, MessageCircle, ArrowRight } from "lucide-react"
+import { Tag, ArrowRight, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProductCard } from "@/components/product-card"
 import type { Product } from "@/lib/data/products"
@@ -8,60 +8,57 @@ import { getTotalStock } from "@/lib/data/products"
 import { formatPrice, getDiscountPercent } from "@/lib/format"
 import { WHATSAPP_NUMBER, createWhatsAppLink, formatProductMessage } from "@/lib/whatsapp"
 
-export function PromotionsSection({ products: promotionProducts }: { products: Product[] }) {
-  if (promotionProducts.length === 0) return null
+export function PromotionsSection({ products: promos }: { products: Product[] }) {
+  if (promos.length === 0) return null
 
-  // Single product: compact featured offer
-  if (promotionProducts.length === 1) {
-    const p = promotionProducts[0]
+  // Single product — compact featured card
+  if (promos.length === 1) {
+    const p = promos[0]
     const discount = p.originalPrice ? getDiscountPercent(p.originalPrice, p.price) : 0
 
     return (
-      <section className="py-8 sm:py-14 lg:py-20">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4">
-          <div className="overflow-hidden rounded-xl bg-[#1a1a1a] text-[#FAF9F6]">
-            {/* Red accent top */}
-            <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-orange-500" />
-
+      <section className="py-8 sm:py-12 lg:py-16">
+        <div className="mx-auto max-w-7xl px-4 lg:px-6">
+          <div className="overflow-hidden rounded-xl border border-red-200/50 bg-red-50/30">
             <div className="flex flex-col sm:flex-row">
               {/* Image */}
               <div className="relative aspect-square w-full sm:aspect-auto sm:w-2/5 lg:w-1/3">
                 <Image src={p.images[0] || "/brand/placeholder-product.svg"} alt={p.name} fill className="object-cover" sizes="(max-width:640px) 100vw, 40vw" />
                 {discount > 0 && (
-                  <span className="absolute left-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white">
+                  <span className="absolute left-3 top-3 rounded-md bg-red-600 px-2.5 py-1 text-[10px] font-bold text-white">
                     -{discount}%
                   </span>
                 )}
               </div>
 
               {/* Info */}
-              <div className="flex flex-1 flex-col justify-center p-5 sm:p-8 lg:p-10">
-                <div className="flex items-center gap-2 text-red-400">
-                  <Percent className="h-4 w-4" />
-                  <span className="text-[10px] font-semibold uppercase tracking-widest">Oferta da semana</span>
+              <div className="flex flex-1 flex-col justify-center p-5 sm:p-8">
+                <div className="flex items-center gap-2 text-red-600">
+                  <Tag className="h-4 w-4" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Oferta especial</span>
                 </div>
-                <h2 className="mt-2 font-serif text-lg font-bold sm:text-2xl lg:text-3xl">{p.name}</h2>
-                <p className="mt-2 text-xs text-[#FAF9F6]/50 line-clamp-2 sm:text-sm">{p.description}</p>
+                <h3 className="mt-2 text-lg font-bold sm:text-xl lg:text-2xl" style={{ fontFamily: "var(--font-serif)" }}>{p.name}</h3>
+                <p className="mt-1.5 text-[12px] text-muted-foreground line-clamp-2 sm:text-sm">{p.description}</p>
 
-                <div className="mt-4 flex items-baseline gap-2.5">
-                  {p.originalPrice && <span className="text-sm text-[#FAF9F6]/40 line-through">{formatPrice(p.originalPrice)}</span>}
-                  <span className="text-2xl font-bold text-red-400 sm:text-3xl">{formatPrice(p.price)}</span>
+                <div className="mt-3 flex items-baseline gap-2.5">
+                  {p.originalPrice && <span className="text-sm text-muted-foreground/50 line-through">{formatPrice(p.originalPrice)}</span>}
+                  <span className="text-2xl font-bold text-red-600">{formatPrice(p.price)}</span>
                 </div>
 
-                {getTotalStock(p) <= 10 && (
-                  <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-red-400/70">
+                {getTotalStock(p) <= 10 && getTotalStock(p) > 0 && (
+                  <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600">
                     Últimas {getTotalStock(p)} unidades
                   </p>
                 )}
 
-                <div className="mt-5 flex gap-2">
+                <div className="mt-4 flex gap-2">
                   <Link href={`/produto/${p.slug}`}>
-                    <Button size="sm" className="gap-1.5 rounded-full bg-white px-5 text-xs font-semibold text-black hover:bg-white/90">
+                    <Button size="sm" className="gap-1.5 rounded-full bg-foreground px-5 text-[11px] font-bold text-background hover:bg-foreground/90">
                       Ver produto <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                   </Link>
                   <a href={createWhatsAppLink(WHATSAPP_NUMBER, formatProductMessage(p.name))} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" className="gap-1.5 rounded-full bg-[#25D366] px-5 text-xs font-semibold text-white hover:bg-[#1DA851]">
+                    <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-5 text-[11px] font-bold text-[#25D366] border-[#25D366]/30 hover:bg-[#25D366]/5">
                       <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                     </Button>
                   </a>
@@ -74,20 +71,30 @@ export function PromotionsSection({ products: promotionProducts }: { products: P
     )
   }
 
-  // Multiple products: grid
+  // Multiple products — grid
   return (
-    <section className="bg-[#1a1a1a] py-8 text-[#FAF9F6] sm:py-14 lg:py-20">
-      <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-orange-500" />
-      <div className="mx-auto max-w-7xl px-3 pt-6 sm:px-4 sm:pt-8">
-        <div className="flex items-center gap-3">
-          <Percent className="h-5 w-5 text-red-400" />
-          <h2 className="font-serif text-lg font-bold sm:text-2xl">Promoções</h2>
-        </div>
-        <div className="-mx-3 mt-5 flex gap-3 overflow-x-auto px-3 pb-3 scrollbar-hide sm:mx-0 sm:mt-8 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-3 lg:grid-cols-4">
-          {promotionProducts.map((product) => (
-            <div key={product.id} className="w-[72vw] max-w-[280px] shrink-0 sm:w-auto sm:max-w-none">
-              <div className="rounded-xl bg-card text-card-foreground"><ProductCard product={product} /></div>
+    <section className="py-8 sm:py-12 lg:py-16">
+      <div className="mx-auto max-w-7xl px-4 lg:px-6">
+        <div className="flex items-end justify-between gap-4 mb-5 sm:mb-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 sm:h-9 sm:w-9">
+              <Tag className="h-4 w-4 text-red-600" />
             </div>
+            <div>
+              <h2 className="text-xl font-bold sm:text-2xl" style={{ fontFamily: "var(--font-serif)" }}>Promoções</h2>
+              <p className="text-[11px] text-muted-foreground sm:text-xs">Peças selecionadas com preço especial.</p>
+            </div>
+          </div>
+          <Link href="/produtos?categoria=promocoes">
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-full text-[11px] sm:text-xs">
+              Ver todas <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {promos.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>
