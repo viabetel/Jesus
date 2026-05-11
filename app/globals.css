@@ -6,6 +6,15 @@
 /* ===== HEX FALLBACKS (all browsers) ===== */
 :root {
   --background: #fafafa;
+
+  --bg: #FFFFFF;
+  --bg-cream: #F5F1EC;
+  --bg-stone: #EDE6DD;
+  --studio-mauve: #C7B5A8;
+  --studio-deep: #8C7A75;
+  --muted-fg: #6B6B6B;
+  --border-soft: rgba(26,26,26,0.10);
+  --hairline: rgba(26,26,26,0.12);
   --foreground: #1A1A1A;
   --card: #ffffff;
   --card-foreground: #1A1A1A;
@@ -89,6 +98,19 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-bg: var(--bg);
+  --color-cream: var(--cream);
+  --color-stone: var(--stone);
+  --color-ink: var(--ink);
+  --color-fg-soft: var(--fg-soft);
+  --color-muted-fg: var(--muted-fg);
+  --color-olive: var(--olive);
+  --color-olive-soft: var(--olive-soft);
+  --color-tan: var(--tan);
+  --color-promo: var(--promo);
+  --color-wa: var(--wa);
+  --color-studio-mauve: var(--studio-mauve);
+  --color-studio-deep: var(--studio-deep);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

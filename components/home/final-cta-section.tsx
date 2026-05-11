@@ -7,7 +7,7 @@ export function FinalCTASection() {
   return (
     <section className="relative h-[400px] bg-[var(--ink)] text-white overflow-hidden sm:h-[480px]">
       <Image
-        src="/hero/hero-main.jpg"
+        src="/banners/drop-semana.jpg"
         alt=""
         fill
         className="object-cover opacity-50"

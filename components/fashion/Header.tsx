@@ -13,7 +13,7 @@ import { SearchDialog } from "@/components/search-dialog"
 const NAV = [
   {
     label: "Camisetas", key: "camisetas", href: "/produtos?categoria=camisetas",
-    hero: { title: "Camisetas Cristãs", kicker: "Mensagem de Fé no Dia a Dia", img: "/hero/hero-main.jpg" },
+    hero: { title: "Camisetas Cristãs", kicker: "Mensagem de Fé no Dia a Dia", img: "/menu/mega-camisetas.jpg" },
     tabs: [
       { name: "Por Estilo", links: [
         { label: "Todas as Camisetas", href: "/produtos?categoria=camisetas" },
@@ -31,7 +31,7 @@ const NAV = [
   },
   {
     label: "Oversized", key: "oversized", href: "/produtos?categoria=oversized",
-    hero: { title: "Oversized", kicker: "Modelagem ampla, presença e propósito", img: "/hero/hero-main.jpg" },
+    hero: { title: "Oversized", kicker: "Modelagem ampla, presença e propósito", img: "/menu/mega-oversized.jpg" },
     tabs: [
       { name: "Caimento", links: [
         { label: "Todas Oversized", href: "/produtos?categoria=oversized" },
@@ -47,7 +47,7 @@ const NAV = [
   },
   {
     label: "Baby Look", key: "babylook", href: "/produtos?categoria=baby-look",
-    hero: { title: "Baby Look", kicker: "Leve, feminina e com propósito", img: "/hero/hero-main.jpg" },
+    hero: { title: "Baby Look", kicker: "Leve, feminina e com propósito", img: "/menu/mega-baby-look.jpg" },
     tabs: [
       { name: "Modelagem", links: [
         { label: "Todas Baby Looks", href: "/produtos?categoria=baby-look" },
@@ -63,7 +63,7 @@ const NAV = [
   },
   {
     label: "Coleções", key: "colecoes", href: "/produtos",
-    hero: { title: "Coleções", kicker: "Escolha por estilo", img: "/hero/hero-main.jpg" },
+    hero: { title: "Coleções", kicker: "Escolha por estilo", img: "/menu/mega-colecoes.jpg" },
     tabs: [
       { name: "Em Alta", links: [
         { label: "Todos os Produtos", href: "/produtos" },

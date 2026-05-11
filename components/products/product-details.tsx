@@ -1,336 +1,188 @@
 "use client"
 
-import { useState, useMemo, type ReactNode } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Heart, ShoppingBag, MessageCircle, Minus, Plus, Ruler, Truck, RefreshCw, Check, AlertCircle, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import Image from "next/image"
+import { toast } from "sonner"
+import { Icon } from "@/components/fashion/Icon"
 import { useCart } from "@/contexts/cart-context"
 import { useFavorites } from "@/contexts/favorites-context"
-import type { Product, ProductSize, ProductColor } from "@/lib/data/products"
-import { getProductColors, getProductSizes, getVariantStock, getVariantSku, getAvailableSizesForColor, getAvailableColorsForSize, getTotalStock } from "@/lib/data/products"
+import type { Product, ProductColor, ProductSize } from "@/lib/data/products"
+import {
+  getProductColors,
+  getProductSizes,
+  getVariantStock,
+  getVariantSku,
+  getAvailableSizesForColor,
+  getTotalStock,
+} from "@/lib/data/products"
 import { WHATSAPP_NUMBER, createWhatsAppLink, formatProductMessage } from "@/lib/whatsapp"
 import { formatPrice, getDiscountPercent } from "@/lib/format"
-import { toast } from "sonner"
-import { cn } from "@/lib/utils"
-import { ProductGallery } from "./product-gallery"
 
 type MediaItem = {
   id: number; url: string; kind: string; role: string; sortOrder: number
   colorKey: string | null; colorName: string | null; colorHex: string | null
 }
 
+function colorKey(name: string) {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-").toLowerCase()
+}
+
 export function ProductDetails({ product, structuredMedia = [] }: { product: Product; structuredMedia?: MediaItem[] }) {
   const allColors = useMemo(() => getProductColors(product), [product])
   const allSizes = useMemo(() => getProductSizes(product), [product])
-
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(allColors[0] || null)
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null)
   const [quantity, setQuantity] = useState(1)
-  const [descOpen, setDescOpen] = useState(false)
-  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [imgIdx, setImgIdx] = useState(0)
 
-  // Derivar imagens pra galeria baseado na cor selecionada
-  const galleryImages = useMemo(() => {
-    if (structuredMedia.length === 0) return product.images
-
-    const colorKey = selectedColor
-      ? selectedColor.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-").toLowerCase()
-      : null
-
-    // 1. Mídia da cor selecionada
-    if (colorKey) {
-      const colorMedia = structuredMedia
-        .filter(m => m.colorKey === colorKey && m.kind === "image")
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-      if (colorMedia.length > 0) return colorMedia.map(m => m.url)
-    }
-
-    // 2. Mídia geral
-    const generalMedia = structuredMedia
-      .filter(m => !m.colorKey && m.kind === "image")
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-    if (generalMedia.length > 0) return generalMedia.map(m => m.url)
-
-    // 3. Fallback images[]
-    return product.images
+  const gallery = useMemo(() => {
+    if (structuredMedia.length === 0) return product.images.length ? product.images : ["/brand/placeholder-product.svg"]
+    const key = selectedColor ? colorKey(selectedColor.name) : null
+    const byColor = key
+      ? structuredMedia.filter(m => m.colorKey === key && m.kind === "image").sort((a,b) => a.sortOrder - b.sortOrder)
+      : []
+    const general = structuredMedia.filter(m => !m.colorKey && m.kind === "image").sort((a,b) => a.sortOrder - b.sortOrder)
+    const imgs = (byColor.length ? byColor : general).map(m => m.url)
+    return imgs.length ? imgs : (product.images.length ? product.images : ["/brand/placeholder-product.svg"])
   }, [structuredMedia, selectedColor, product.images])
 
   const { addItem, isInCart } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
 
-  // Variant-aware computed state
   const availableSizes = useMemo(() => selectedColor ? getAvailableSizesForColor(product, selectedColor.name) : allSizes, [product, selectedColor, allSizes])
-  const availableColors = useMemo(() => selectedSize ? getAvailableColorsForSize(product, selectedSize) : allColors, [product, selectedSize, allColors])
-
-  const currentStock = useMemo(() => {
-    if (!selectedColor || !selectedSize) return 0
-    return getVariantStock(product, selectedColor.name, selectedSize)
-  }, [product, selectedColor, selectedSize])
-
-  const totalStock = useMemo(() => getTotalStock(product), [product])
-  const isOutOfStock = totalStock === 0
-  const canAdd = selectedColor && selectedSize && currentStock > 0
+  const currentStock = useMemo(() => selectedColor && selectedSize ? getVariantStock(product, selectedColor.name, selectedSize) : 0, [product, selectedColor, selectedSize])
+  const sku = selectedColor && selectedSize ? getVariantSku(product, selectedColor.name, selectedSize) : null
+  const totalStock = getTotalStock(product)
+  const canAdd = !!selectedColor && !!selectedSize && currentStock > 0 && !!sku
   const isFav = isFavorite(product.id)
-  const currentVariantSku = selectedColor && selectedSize
-    ? getVariantSku(product, selectedColor.name, selectedSize)
-    : null
-  const inCart = currentVariantSku ? isInCart(product.id, currentVariantSku) : false
+  const inCart = sku ? isInCart(product.id, sku) : false
   const discount = product.originalPrice ? getDiscountPercent(product.originalPrice, product.price) : 0
+  const badge = product.badge || (product.isPromotion ? "Promoção" : product.isNew ? "Lançamento" : totalStock > 0 ? "Pronta Entrega" : "Esgotado")
 
-  const handleColorSelect = (c: ProductColor) => {
-    setSelectedColor(c)
-    if (selectedSize && getVariantStock(product, c.name, selectedSize) === 0) {
-      setSelectedSize(null)
-    }
-    setQuantity(1)
-  }
-
-  const handleSizeSelect = (s: ProductSize) => {
-    setSelectedSize(s)
-    setQuantity(1)
-  }
-
-  const handleAddToCart = () => {
-    if (!canAdd || !selectedColor || !selectedSize) return
-    if (quantity > currentStock) {
-      toast.error(`Estoque insuficiente. Disponível: ${currentStock} un.`)
-      return
-    }
-    const sku = getVariantSku(product, selectedColor.name, selectedSize)
-    if (!sku) {
-      toast.error("Variante não encontrada.")
+  function handleAdd() {
+    if (!canAdd || !selectedColor || !selectedSize || !sku) {
+      toast.error("Escolha cor e tamanho disponíveis.")
       return
     }
     addItem(product.id, sku, quantity, product.price)
-    toast.success("Adicionado à sacola!", { description: `${product.name} — ${selectedSize} — ${selectedColor.name}` })
+    toast.success(inCart ? "Quantidade atualizada na sacola." : "Adicionado à sacola!", {
+      description: `${product.name} — ${selectedSize} — ${selectedColor.name}`,
+    })
   }
 
   return (
-    <>
-      <div className="grid gap-5 lg:grid-cols-[minmax(300px,480px)_1fr] lg:gap-8 xl:grid-cols-[480px_1fr]">
-        <ProductGallery product={{ ...product, images: galleryImages }} />
+    <main className="pb-24 bg-bg">
+      <div className="mx-auto max-w-[1600px] px-6 sm:px-10">
+        <div className="text-[11px] caps tracking-[0.22em] text-muted-fg mb-8">
+          <Link href="/" className="hover:text-ink">Fashion Store</Link> / <Link href="/produtos" className="hover:text-ink">Catálogo</Link> / <span className="text-ink">{product.name}</span>
+        </div>
 
-        <div className="space-y-3.5">
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-[10px] text-muted-foreground sm:text-xs">
-            <Link href="/" className="hover:text-foreground">Início</Link><span>/</span>
-            <Link href="/produtos" className="hover:text-foreground">Produtos</Link><span>/</span>
-            <span className="truncate text-foreground">{product.name}</span>
-          </nav>
-
-          {/* Title + Price */}
-          <div>
-            <p className="text-[9px] font-medium tracking-[0.12em] text-muted-foreground uppercase sm:text-[10px]">{product.category}</p>
-            <h1 className="mt-0.5 font-serif text-base font-bold leading-snug sm:text-xl lg:text-2xl">{product.name}</h1>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className={cn("text-base font-bold sm:text-lg", product.originalPrice && "text-red-600")}>{formatPrice(product.price)}</span>
-              {product.originalPrice && (
-                <>
-                  <span className="text-[10px] text-muted-foreground line-through sm:text-xs">{formatPrice(product.originalPrice)}</span>
-                  <span className="rounded-full bg-red-100 px-1.5 py-px text-[9px] font-semibold text-red-700">-{discount}%</span>
-                </>
-              )}
+        <div className="grid gap-12 lg:grid-cols-[1.45fr_1fr] lg:gap-16">
+          <div className="grid gap-4 sm:grid-cols-[80px_1fr] sm:gap-5">
+            <div className="order-2 flex gap-3 overflow-x-auto sm:order-1 sm:flex-col sm:overflow-visible">
+              {gallery.slice(0, 6).map((g, i) => (
+                <button key={g + i} onClick={() => setImgIdx(i)} className={`relative aspect-[3/4] w-20 shrink-0 overflow-hidden bg-stone sm:w-auto ${i === imgIdx ? "ring-1 ring-ink" : ""}`}>
+                  <Image src={g} alt="" fill className="object-cover" sizes="80px" />
+                </button>
+              ))}
             </div>
-            <p className="mt-0.5 text-[10px] text-muted-foreground">SKU: {product.sku}</p>
-          </div>
-
-          {/* Color — variant-aware */}
-          <div>
-            <span className="mb-1.5 block text-xs font-medium sm:text-sm">Cor: {selectedColor?.name || "Selecione"}</span>
-            <div className="flex flex-wrap gap-2">
-              {allColors.map((c) => {
-                const isAvail = availableColors.some(ac => ac.name === c.name)
-                return (
-                  <button key={c.name} disabled={!isAvail}
-                    className={cn("relative flex h-9 w-9 items-center justify-center rounded-full border-2 sm:h-10 sm:w-10",
-                      selectedColor?.name === c.name ? "border-foreground ring-2 ring-foreground ring-offset-2" : "border-border",
-                      !isAvail && "opacity-30 cursor-not-allowed"
-                    )}
-                    style={{ backgroundColor: c.value }} onClick={() => handleColorSelect(c)} title={c.name}>
-                    {selectedColor?.name === c.name && <Check className={cn("h-3.5 w-3.5", c.value === "#FFFFFF" || c.value === "#FAF9F6" ? "text-foreground" : "text-white")} />}
-                    {!isAvail && <X className="absolute h-5 w-5 text-red-500" />}
-                  </button>
-                )
-              })}
+            <div className="order-1 grid grid-cols-2 gap-3 sm:order-2">
+              <div className="relative col-span-2 aspect-[3/4] overflow-hidden bg-stone">
+                <Image src={gallery[imgIdx] || gallery[0]} alt={product.name} fill priority className="object-cover" sizes="(max-width:1024px) 100vw, 55vw" />
+              </div>
+              <div className="relative aspect-[3/4] overflow-hidden bg-stone">
+                <Image src={gallery[(imgIdx + 1) % gallery.length] || gallery[0]} alt="" fill className="object-cover" sizes="30vw" />
+              </div>
+              <div className="relative aspect-[3/4] overflow-hidden bg-stone">
+                <Image src={gallery[(imgIdx + 2) % gallery.length] || gallery[0]} alt="" fill className="object-cover" sizes="30vw" />
+              </div>
             </div>
           </div>
 
-          {/* Size — variant-aware */}
-          <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-xs font-medium sm:text-sm">Tamanho{!selectedSize && " — selecione"}</span>
-              <Link href="/guia-de-medidas" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground sm:text-xs"><Ruler className="h-3 w-3" /> Guia</Link>
+          <aside className="lg:sticky lg:top-44 self-start">
+            <span className={`status-pill ${product.isPromotion ? "bg-[var(--promo)]" : product.isNew || product.isBestseller ? "status-pill--tan" : "status-pill--olive"}`}>{badge}</span>
+            <h1 className="mt-5 caps text-[13px] tracking-[0.14em] text-ink sm:text-[14px]">{product.name}</h1>
+            <p className="mt-2 text-[12px] text-muted-fg">Ref.: {product.sku}</p>
+
+            <div className="mt-7">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <p className={`text-[26px] font-medium sm:text-[30px] ${product.originalPrice ? "text-promo" : "text-ink"}`}>{formatPrice(product.price)}</p>
+                {product.originalPrice && <p className="text-[13px] text-muted-fg line-through">{formatPrice(product.originalPrice)}</p>}
+                {discount > 0 && <span className="bg-promo text-white px-2 py-1 text-[10px] font-semibold">−{discount}%</span>}
+              </div>
+              <p className="text-[12.5px] text-muted-fg mt-1">ou em <span className="font-semibold text-ink/85">3x de {formatPrice(product.price / 3)}</span> sem juros</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {allSizes.map((s) => {
-                const stock = selectedColor ? getVariantStock(product, selectedColor.name, s) : 0
-                const isAvail = availableSizes.includes(s) && stock > 0
-                return (
-                  <Button key={s} variant={selectedSize === s ? "default" : "outline"} disabled={!isAvail}
-                    className={cn("h-9 min-w-[42px] rounded-full text-xs sm:h-10 sm:min-w-[46px]", !isAvail && "line-through opacity-40")}
-                    onClick={() => handleSizeSelect(s)}>
-                    {s}
-                  </Button>
-                )
-              })}
-            </div>
-            {selectedColor && selectedSize && currentStock > 0 && currentStock <= 5 && (
-              <p className="mt-1 text-[10px] font-medium text-amber-600">Restam {currentStock} un. nessa variação</p>
-            )}
-            {selectedColor && selectedSize && currentStock === 0 && (
-              <p className="mt-1 text-[10px] font-medium text-red-500">Esgotado nessa variação</p>
-            )}
-          </div>
 
-          {/* Quantity */}
-          {canAdd && (
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-medium sm:text-sm">Qtd:</span>
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={quantity <= 1}><Minus className="h-3.5 w-3.5" /></Button>
-              <span className="min-w-[24px] text-center text-sm font-medium">{quantity}</span>
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => setQuantity(q => Math.min(currentStock, q + 1))} disabled={quantity >= currentStock}><Plus className="h-3.5 w-3.5" /></Button>
-            </div>
-          )}
+            <p className="mt-6 text-[14.5px] text-fg-soft leading-relaxed">{product.description}</p>
 
-          {/* Notice */}
-          <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-2.5">
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-            <p className="text-[10px] leading-relaxed text-muted-foreground sm:text-xs">Disponibilidade e pagamento confirmados pelo WhatsApp.</p>
-          </div>
+            <Link href="/guia-de-medidas" className="mt-6 inline-flex items-center gap-2 px-4 h-10 border border-border text-[12px] hover:border-ink transition">
+              <Icon name="ruler" size={14}/> Tabela de Medidas
+            </Link>
 
-          {/* Desktop CTAs */}
-          <div className="hidden gap-2 sm:flex">
-            <Button size="lg" className="h-10 flex-1 gap-2 rounded-xl text-sm" onClick={handleAddToCart} disabled={!canAdd}>
-              <ShoppingBag className="h-4 w-4" /> {inCart ? "Na sacola" : "Adicionar à sacola"}
-            </Button>
-            <Button variant="outline" size="lg" className="h-10 gap-2 rounded-xl" onClick={() => { toggleFavorite(product); if (!isFav) toast.success("Favoritado!") }}>
-              <Heart className={cn("h-4 w-4", isFav && "fill-current text-red-500")} />
-            </Button>
-          </div>
-          {!canAdd && !isOutOfStock && (
-            <p className="hidden text-xs text-muted-foreground sm:block">Selecione cor e tamanho para adicionar à sacola.</p>
-          )}
-          <a href={createWhatsAppLink(WHATSAPP_NUMBER, formatProductMessage(product.name))} target="_blank" rel="noopener noreferrer" className="hidden sm:block">
-            <Button size="lg" className="h-10 w-full gap-2 rounded-xl bg-[#25D366] text-sm text-white hover:bg-[#1DA851]" disabled={isOutOfStock}><MessageCircle className="h-4 w-4" /> Comprar pelo WhatsApp</Button>
-          </a>
-
-          {/* Accordions */}
-          <div className="space-y-0 border-t">
-            {/* Description */}
-            <button onClick={() => setDescOpen(!descOpen)} className="flex w-full items-center justify-between py-3 text-left text-sm font-medium">Descrição <ChevronDown className={cn("h-4 w-4 transition-transform", descOpen && "rotate-180")} /></button>
-            {descOpen && <p className="pb-3 text-xs leading-relaxed text-muted-foreground">{product.description}</p>}
-
-            {/* Details */}
-            <button onClick={() => setDetailsOpen(!detailsOpen)} className="flex w-full items-center justify-between border-t py-3 text-left text-sm font-medium">Detalhes do produto <ChevronDown className={cn("h-4 w-4 transition-transform", detailsOpen && "rotate-180")} /></button>
-            {detailsOpen && (
-              <ul className="space-y-1.5 pb-3">
-                {product.details.map((d, i) => (<li key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground"><Check className="h-3 w-3 text-[#C2A87D]" /> {d}</li>))}
-              </ul>
+            {allColors.length > 0 && (
+              <div className="mt-7">
+                <p className="text-[13px] mb-3">Cor: <span className="font-semibold">{selectedColor?.name || "Selecione"}</span></p>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {allColors.map(c => (
+                    <button key={c.name} onClick={() => { setSelectedColor(c); setSelectedSize(null); setQuantity(1) }} title={c.name}
+                      className={`h-10 w-10 rounded-full transition ${selectedColor?.name === c.name ? "ring-1 ring-ink ring-offset-2" : "ring-1 ring-transparent hover:ring-ink/30"} ${c.value === "#FFFFFF" || c.value === "#FAF9F6" ? "border border-black/15" : ""}`}
+                      style={{ background: c.value }} />
+                  ))}
+                </div>
+              </div>
             )}
 
-            {/* Composition & Care */}
-            <AccordionItem title="Composição e cuidados">
-              <ul className="space-y-1.5 text-xs text-muted-foreground">
-                {product.composition && (
-                  <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> {product.composition}</li>
-                )}
-                {product.fit && (
-                  <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Modelagem: {product.fit}</li>
-                )}
-                {product.care && product.care.length > 0
-                  ? product.care.map((c, i) => (
-                      <li key={i} className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> {c}</li>
-                    ))
-                  : (
-                    <>
-                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Lavar à máquina (30°C)</li>
-                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Não usar alvejante</li>
-                      <li className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#C2A87D]" /> Secar à sombra</li>
-                    </>
+            <div className="mt-7">
+              <p className="text-[13px] mb-3">Tamanho{!selectedSize && " — selecione"}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {allSizes.map(s => {
+                  const stock = selectedColor ? getVariantStock(product, selectedColor.name, s) : 0
+                  const available = availableSizes.includes(s) && stock > 0
+                  return (
+                    <button key={s} onClick={() => available && setSelectedSize(s)} disabled={!available}
+                      className={`h-11 min-w-[64px] px-4 caps text-[12px] border transition ${selectedSize === s ? "bg-ink text-white border-ink" : "border-border text-ink hover:border-ink"} ${!available ? "opacity-35 line-through cursor-not-allowed" : ""}`}>
+                      {s}
+                    </button>
                   )
-                }
-              </ul>
-            </AccordionItem>
-
-            {/* Size Guide */}
-            <AccordionItem title="Guia de medidas">
-              <div className="space-y-2 pb-1">
-                <table className="w-full text-[10px] sm:text-xs">
-                  <thead><tr className="border-b text-left text-muted-foreground"><th className="py-1 pr-4 font-medium">Tam</th><th className="py-1 pr-4 font-medium">Largura</th><th className="py-1 pr-4 font-medium">Comprimento</th></tr></thead>
-                  <tbody>
-                    {product.sizeGuide && product.sizeGuide.length > 0
-                      ? product.sizeGuide.map((sg, i) => (
-                          <tr key={i} className="border-b border-border/30">
-                            <td className="py-1.5 pr-4 font-medium">{sg.size}</td>
-                            <td className="py-1.5 pr-4 text-muted-foreground">{sg.width}</td>
-                            <td className="py-1.5 text-muted-foreground">{sg.length}</td>
-                          </tr>
-                        ))
-                      : (
-                        <>
-                          <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">P</td><td className="py-1.5 pr-4 text-muted-foreground">50cm</td><td className="py-1.5 text-muted-foreground">68cm</td></tr>
-                          <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">M</td><td className="py-1.5 pr-4 text-muted-foreground">52cm</td><td className="py-1.5 text-muted-foreground">70cm</td></tr>
-                          <tr className="border-b border-border/30"><td className="py-1.5 pr-4 font-medium">G</td><td className="py-1.5 pr-4 text-muted-foreground">54cm</td><td className="py-1.5 text-muted-foreground">72cm</td></tr>
-                          <tr><td className="py-1.5 pr-4 font-medium">GG</td><td className="py-1.5 pr-4 text-muted-foreground">58cm</td><td className="py-1.5 text-muted-foreground">74cm</td></tr>
-                        </>
-                      )
-                    }
-                  </tbody>
-                </table>
-                <Link href="/guia-de-medidas" className="inline-flex items-center gap-1 text-[10px] font-medium text-foreground underline underline-offset-2">Ver guia completo <Ruler className="h-3 w-3" /></Link>
+                })}
               </div>
-            </AccordionItem>
+              {selectedColor && selectedSize && currentStock > 0 && currentStock <= 5 && <p className="mt-2 text-[12px] text-promo">Restam {currentStock} unidades nessa variação.</p>}
+            </div>
 
-            {/* How to buy */}
-            <AccordionItem title="Como comprar">
-              <div className="space-y-2 text-xs text-muted-foreground">
-                <p>1. Escolha cor e tamanho</p>
-                <p>2. Adicione à sacola ou clique em <strong className="text-foreground">Comprar pelo WhatsApp</strong></p>
-                <p>3. Confirme dados, endereço e forma de pagamento</p>
-                <p>4. Receba em casa ou retire em Juiz de Fora/MG</p>
+            <div className="mt-8 flex items-center gap-3">
+              <div className="flex items-center border border-border h-14">
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-full w-12 grid place-items-center"><Icon name="minus" size={13}/></button>
+                <span className="w-10 text-center text-[14px]">{quantity}</span>
+                <button onClick={() => setQuantity(quantity + 1)} className="h-full w-12 grid place-items-center"><Icon name="plus" size={13}/></button>
               </div>
-            </AccordionItem>
-          </div>
+              <button onClick={handleAdd} disabled={!canAdd} className="flex-1 h-14 bg-ink text-white caps text-[12px] hover:bg-fg-soft transition disabled:opacity-45 disabled:cursor-not-allowed">
+                {inCart ? "Atualizar Sacola" : "Adicionar à Sacola"}
+              </button>
+              <button onClick={() => toggleFavorite(product)} className="h-14 w-14 border border-border grid place-items-center hover:border-ink transition" aria-label="Favoritar">
+                <Icon name={isFav ? "heart-fill" : "heart"} size={16} color={isFav ? "#B91C1C" : "currentColor"}/>
+              </button>
+            </div>
 
-          {/* Shipping */}
-          <div className="flex gap-4 border-t pt-3 text-xs">
-            <div className="flex items-center gap-2"><Truck className="h-4 w-4 text-muted-foreground" /><div><p className="font-medium">Entrega</p><p className="text-[10px] text-muted-foreground">Pelo WhatsApp</p></div></div>
-            <div className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-muted-foreground" /><div><p className="font-medium">Trocas</p><Link href="/trocas-e-entregas" className="text-[10px] text-muted-foreground underline">Ver política</Link></div></div>
-          </div>
+            <a href={createWhatsAppLink(WHATSAPP_NUMBER, formatProductMessage(product.name))} target="_blank" rel="noopener noreferrer" className="mt-3 h-12 w-full inline-flex items-center justify-center gap-2 bg-wa text-white caps text-[11px] hover:brightness-95 transition">
+              <Icon name="whatsapp" size={16} color="white"/> Comprar pelo WhatsApp
+            </a>
+
+            <div className="mt-8 border-t border-border">
+              {[
+                ["Descrição", product.description],
+                ["Composição & Cuidados", product.composition || product.details.join(" · ") || "Peça selecionada com acabamento confortável e estampa de qualidade."],
+                ["Entrega & Trocas", "Compra pelo WhatsApp. Confirmamos estoque, pagamento e entrega antes da finalização."],
+              ].map(([t, b]) => (
+                <details key={t} className="border-b border-border py-5 group">
+                  <summary className="caps text-[11px] flex items-center justify-between cursor-pointer">{t}<span className="transition group-open:rotate-45"><Icon name="plus" size={13}/></span></summary>
+                  <p className="mt-4 text-[14px] text-fg-soft leading-relaxed">{b}</p>
+                </details>
+              ))}
+            </div>
+          </aside>
         </div>
       </div>
-
-      {/* Mobile sticky CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur-sm sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 6px)" }}>
-        <div className="flex items-center gap-2 px-3 py-2">
-          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-full" onClick={() => { toggleFavorite(product); if (!isFav) toast.success("Favoritado!") }}>
-            <Heart className={cn("h-4 w-4", isFav && "fill-current text-red-500")} />
-          </Button>
-          <Button className="h-9 flex-1 gap-1.5 rounded-full text-[11px]" onClick={handleAddToCart} disabled={!canAdd}>
-            <ShoppingBag className="h-3.5 w-3.5" /> {!canAdd ? "Selecione opções" : inCart ? "Na sacola" : "Sacola"}
-          </Button>
-          <a href={createWhatsAppLink(WHATSAPP_NUMBER, formatProductMessage(product.name))} target="_blank" rel="noopener noreferrer" className="flex-1">
-            <Button className="h-9 w-full gap-1.5 rounded-full bg-[#25D366] text-[11px] text-white hover:bg-[#1DA851]" disabled={isOutOfStock}><MessageCircle className="h-3.5 w-3.5" /> WhatsApp</Button>
-          </a>
-        </div>
-      </div>
-    </>
-  )
-}
-
-function X({ className }: { className?: string }) {
-  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-}
-
-// Simple accordion item for product info sections
-function AccordionItem({ title, children }: { title: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between border-t py-3 text-left text-sm font-medium">
-        {title} <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
-      </button>
-      {open && <div className="pb-3">{children}</div>}
-    </>
+    </main>
   )
 }

@@ -16,7 +16,7 @@ const cols = {
     { label: "Guia de Medidas", href: "/guia-de-medidas" },
     { label: "Trocas e Devoluções", href: "/trocas-e-entregas" },
     { label: "Política de Privacidade", href: "/privacidade" },
-    { label: "Termos de Uso", href: "/privacidade" },
+    { label: "Termos de Uso", href: "/termos-de-uso" },
   ],
   "Sobre": [
     { label: "Quem Somos", href: "/quem-somos" },

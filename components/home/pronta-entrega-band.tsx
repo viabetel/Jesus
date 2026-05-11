@@ -34,7 +34,7 @@ export function ProntaEntregaBand() {
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 aspect-[2/1.1]">
           <div className="bg-[var(--cream)] overflow-hidden relative">
             <Image
-              src="/hero/hero-main.jpg"
+              src="/banners/pronta-entrega.jpg"
               alt="Pronta entrega"
               fill
               className="object-cover"
@@ -43,7 +43,7 @@ export function ProntaEntregaBand() {
           </div>
           <div className="bg-[var(--cream)] overflow-hidden relative">
             <Image
-              src="/hero/hero-main.jpg"
+              src="/banners/drop-semana.jpg"
               alt="Pronta entrega"
               fill
               className="object-cover object-left"

@@ -5,10 +5,10 @@ import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 
 const items = [
-  { t: "Fé Urbana", s: "Peças com mensagem, presença e estética casual.", href: "/produtos", img: "/hero/hero-main.jpg", gradient: "from-stone-800 to-stone-900" },
-  { t: "Essenciais", s: "Camisetas fáceis de combinar, com propósito no detalhe.", href: "/produtos", img: "/hero/hero-main.jpg", gradient: "from-zinc-800 to-neutral-900" },
-  { t: "Para Presentear", s: "Uma forma simples de entregar uma mensagem especial.", href: "/produtos", img: "/hero/hero-main.jpg", gradient: "from-amber-800 to-stone-900" },
-  { t: "Looks do Dia a Dia", s: "Combinações leves que conversam com a sua rotina.", href: "/produtos", img: "/hero/hero-main.jpg", gradient: "from-rose-800 to-stone-900" },
+  { t: "Fé Urbana", s: "Peças com mensagem, presença e estética casual.", href: "/produtos", img: "/collections/fe-urbana.jpg", gradient: "from-stone-800 to-stone-900" },
+  { t: "Essenciais", s: "Camisetas fáceis de combinar, com propósito no detalhe.", href: "/produtos", img: "/collections/essenciais.jpg", gradient: "from-zinc-800 to-neutral-900" },
+  { t: "Para Presentear", s: "Uma forma simples de entregar uma mensagem especial.", href: "/produtos", img: "/collections/para-presentear.jpg", gradient: "from-amber-800 to-stone-900" },
+  { t: "Looks do Dia a Dia", s: "Combinações leves que conversam com a sua rotina.", href: "/produtos", img: "/collections/dia-a-dia.jpg", gradient: "from-rose-800 to-stone-900" },
 ]
 
 export function CollectionsSection() {
