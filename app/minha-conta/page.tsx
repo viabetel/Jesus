@@ -14,8 +14,8 @@ import {
   X,
   MessageCircle,
 } from "lucide-react"
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader as Header } from "@/components/fashion/Header"
+import { FashionFooter as Footer } from "@/components/fashion/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

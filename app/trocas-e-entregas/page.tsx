@@ -1,5 +1,5 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader as Header } from "@/components/fashion/Header"
+import { FashionFooter as Footer } from "@/components/fashion/Footer"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, Truck, RefreshCw, Clock, HelpCircle } from "lucide-react"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"

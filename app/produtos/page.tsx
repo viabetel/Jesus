@@ -1,6 +1,6 @@
 import { Suspense } from "react"
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader } from "@/components/fashion/Header"
+import { FashionFooter } from "@/components/fashion/Footer"
 import { ProductsContent } from "@/components/products/products-content"
 import { getPublicProducts } from "@/lib/services/public-catalog"
 
@@ -17,19 +17,24 @@ export default async function ProductsPage() {
 
   return (
     <>
-      <Header />
-      <main className="min-h-dvh">
-        <div className="mx-auto max-w-7xl px-4 py-6 lg:py-10">
-          <div className="mb-6">
-            <h1 className="font-serif text-2xl font-bold sm:text-3xl lg:text-4xl">Nossos Produtos</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Camisetas cristãs com estilo, qualidade e propósito</p>
+      <div className="fixed inset-x-0 top-0 z-40 bg-white border-b border-[var(--border)]">
+        <FashionHeader />
+      </div>
+      <main className="min-h-dvh pt-32">
+        <div className="mx-auto max-w-[1600px] px-6 py-6 sm:px-10 lg:py-10">
+          <div className="text-[11px] caps tracking-[0.22em] text-[var(--muted-foreground)]">Fashion Store / Catálogo</div>
+          <h1 className="mt-4 font-serif italic font-bold text-[32px] leading-none sm:text-[42px] lg:text-[52px]">Camisetas Cristãs</h1>
+          <p className="mt-3 text-[14px] text-[var(--fg-soft)] max-w-[640px] leading-relaxed sm:text-[15px]">
+            Peças confortáveis, estilosas e com mensagens de propósito. Escolha sua camiseta e finalize pelo WhatsApp.
+          </p>
+          <div className="mt-8">
+            <Suspense fallback={<div className="flex h-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+              <ProductsContent products={products} />
+            </Suspense>
           </div>
-          <Suspense fallback={<div className="flex h-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
-            <ProductsContent products={products} />
-          </Suspense>
         </div>
       </main>
-      <Footer />
+      <FashionFooter />
     </>
   )
 }

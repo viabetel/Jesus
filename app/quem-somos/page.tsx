@@ -1,6 +1,6 @@
 import Image from "next/image"
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader as Header } from "@/components/fashion/Header"
+import { FashionFooter as Footer } from "@/components/fashion/Footer"
 import { Heart, Star, Shield, Sparkles } from "lucide-react"
 
 export const metadata = {

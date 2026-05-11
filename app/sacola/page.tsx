@@ -1,5 +1,5 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader } from "@/components/fashion/Header"
+import { FashionFooter } from "@/components/fashion/Footer"
 import { CartContent } from "@/components/cart/cart-content"
 
 export const metadata = {
@@ -10,14 +10,19 @@ export const metadata = {
 export default function CartPage() {
   return (
     <>
-      <Header />
-      <main className="min-h-dvh py-8 lg:py-12">
-        <div className="mx-auto max-w-4xl px-4">
-          <h1 className="mb-8 font-serif text-3xl font-bold">Sua Sacola</h1>
-          <CartContent />
+      <div className="fixed inset-x-0 top-0 z-40 bg-white border-b border-[var(--border)]">
+        <FashionHeader />
+      </div>
+      <main className="min-h-dvh pt-36 pb-24 bg-white">
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-10">
+          <div className="text-[11px] caps tracking-[0.22em] text-[var(--muted-foreground)]">Fashion Store / Sacola</div>
+          <h1 className="mt-4 font-serif italic font-bold text-[32px] leading-none sm:text-[42px] lg:text-[52px]">Sua Sacola</h1>
+          <div className="mt-8">
+            <CartContent />
+          </div>
         </div>
       </main>
-      <Footer />
+      <FashionFooter />
     </>
   )
 }

@@ -1,5 +1,5 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader as Header } from "@/components/fashion/Header"
+import { FashionFooter as Footer } from "@/components/fashion/Footer"
 import { sizeChart } from "@/lib/data/products"
 import { Ruler, MessageCircle, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"

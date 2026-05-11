@@ -1,6 +1,6 @@
 import { WHATSAPP_DISPLAY, STORE_EMAIL } from "@/lib/whatsapp"
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader as Header } from "@/components/fashion/Header"
+import { FashionFooter as Footer } from "@/components/fashion/Footer"
 import { Shield } from "lucide-react"
 
 export const metadata = {

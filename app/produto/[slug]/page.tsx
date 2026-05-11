@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader } from "@/components/fashion/Header"
+import { FashionFooter } from "@/components/fashion/Footer"
 import { ProductDetails } from "@/components/products/product-details"
 import { RelatedProducts } from "@/components/products/related-products"
 import { getPublicProductBySlug, getPublicProducts } from "@/lib/services/public-catalog"
@@ -52,9 +52,11 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <>
-      <Header />
-      <main className="min-h-dvh py-4 pb-20 sm:pb-6 lg:py-10">
-        <div className="mx-auto max-w-6xl px-4">
+      <div className="fixed inset-x-0 top-0 z-40 bg-white border-b border-[var(--border)]">
+        <FashionHeader />
+      </div>
+      <main className="min-h-dvh pt-32 pb-20 sm:pb-6 lg:pt-36">
+        <div className="mx-auto max-w-[1600px] px-6 sm:px-10">
           <ProductDetails product={product} structuredMedia={mediaData} />
           <RelatedProducts currentProduct={product} allProducts={allProducts} />
 
@@ -69,7 +71,7 @@ export default async function ProductPage({ params }: Props) {
           }) }} />
         </div>
       </main>
-      <Footer />
+      <FashionFooter />
     </>
   )
 }

@@ -1,5 +1,5 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { FashionHeader } from "@/components/fashion/Header"
+import { FashionFooter } from "@/components/fashion/Footer"
 import { HeroSection } from "@/components/home/hero-section"
 import { ServiceRow } from "@/components/home/service-row"
 import { CategoryStrip } from "@/components/home/categories-section"
@@ -35,11 +35,13 @@ export default async function Home() {
 
   return (
     <>
-      <Header />
-      <main>
-        {/* 1. Hero — full-bleed editorial carousel */}
+      {/* Header transparent overlaying hero — FASHION original behavior */}
+      <div className="relative">
+        <FashionHeader transparent />
         <HeroSection />
+      </div>
 
+      <main>
         {/* 2. Service row — trust/benefits */}
         <ServiceRow />
 
@@ -76,7 +78,7 @@ export default async function Home() {
         {/* 13. CTA final */}
         <FinalCTASection />
       </main>
-      <Footer />
+      <FashionFooter />
     </>
   )
 }
