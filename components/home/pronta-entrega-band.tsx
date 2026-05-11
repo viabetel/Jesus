@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, MessageCircle } from "lucide-react"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
+import { homeMedia } from "@/lib/home-media"
 
 export function ProntaEntregaBand() {
   return (
@@ -34,20 +35,20 @@ export function ProntaEntregaBand() {
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 aspect-[2/1.1]">
           <div className="bg-[var(--cream)] overflow-hidden relative">
             <Image
-              src="/banners/pronta-entrega.jpg"
+              src={homeMedia.banners.prontaEntrega.src}
               alt="Pronta entrega"
               fill
-              className="object-cover"
+              className={`object-cover ${homeMedia.banners.prontaEntrega.position}`}
               quality={95}
               sizes="(max-width:1024px) 50vw, 25vw"
             />
           </div>
           <div className="bg-[var(--cream)] overflow-hidden relative">
             <Image
-              src="/banners/drop-semana.jpg"
+              src={homeMedia.banners.dropSemana.src}
               alt="Pronta entrega"
               fill
-              className="object-cover object-left"
+              className={`object-cover ${homeMedia.banners.dropSemana.position}`}
               quality={95}
               sizes="(max-width:1024px) 50vw, 25vw"
             />

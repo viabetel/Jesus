@@ -3,12 +3,13 @@
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
+import { homeMedia } from "@/lib/home-media"
 
 const items = [
-  { t: "Fé Urbana", s: "Peças com mensagem, presença e estética casual.", href: "/produtos", img: "/collections/fe-urbana.jpg", gradient: "from-stone-800 to-stone-900" },
-  { t: "Essenciais", s: "Camisetas fáceis de combinar, com propósito no detalhe.", href: "/produtos", img: "/collections/essenciais.jpg", gradient: "from-zinc-800 to-neutral-900" },
-  { t: "Para Presentear", s: "Uma forma simples de entregar uma mensagem especial.", href: "/produtos", img: "/collections/para-presentear.jpg", gradient: "from-amber-800 to-stone-900" },
-  { t: "Looks do Dia a Dia", s: "Combinações leves que conversam com a sua rotina.", href: "/produtos", img: "/collections/dia-a-dia.jpg", gradient: "from-rose-800 to-stone-900" },
+  { t: "Essenciais da Fé", s: "Camisetas com mensagem, conforto e presença no dia a dia.", href: "/produtos", img: homeMedia.collections.essenciais.src, position: homeMedia.collections.essenciais.position, gradient: "from-stone-800 to-stone-900" },
+  { t: "Sal e Luz", s: "Peças versáteis para combinar com tudo e vestir uma mensagem.", href: "/produtos", img: homeMedia.collections.saleluz.src, position: homeMedia.collections.saleluz.position, gradient: "from-zinc-800 to-neutral-900" },
+  { t: "Para Presentear", s: "Uma forma simples de entregar uma mensagem especial.", href: "/produtos", img: homeMedia.collections.presentear.src, position: homeMedia.collections.presentear.position, gradient: "from-amber-800 to-stone-900" },
+  { t: "Dia a Dia com Propósito", s: "Looks simples, confortáveis e alinhados à sua rotina.", href: "/produtos", img: homeMedia.collections.diaadia.src, position: homeMedia.collections.diaadia.position, gradient: "from-rose-800 to-stone-900" },
 ]
 
 export function CollectionsSection() {
@@ -28,7 +29,7 @@ export function CollectionsSection() {
                 src={it.img}
                 alt={it.t}
                 fill
-                className="object-cover transition-transform duration-[1100ms] group-hover:scale-[1.06]"
+                className={`object-cover ${it.position} transition-transform duration-[1100ms] group-hover:scale-[1.06]`}
                 quality={95}
                 sizes="(max-width:640px) 50vw, 25vw"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}

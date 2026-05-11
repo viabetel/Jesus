@@ -3,7 +3,7 @@ import { Star } from "lucide-react"
 const items = [
   { q: "Comprei pelo WhatsApp e fui muito bem atendida. Chegou rápido e a estampa é exatamente como na foto.", a: "Cliente Fashion Store", c: "Compra pelo WhatsApp · Juiz de Fora/MG" },
   { q: "A camiseta veste muito bem e a qualidade do tecido é ótima. Vou pedir mais cores.", a: "Cliente Fashion Store", c: "Oversized Propósito" },
-  { q: "Gostei da mensagem e do conforto da peça. Combina com várias produções.", a: "Cliente Fashion Store", c: "Baby Look Sal e Luz" },
+  { q: "Gostei da mensagem e do conforto da peça. Combina com várias produções.", a: "Cliente Fashion Store", c: "Linha Feminina Sal e Luz" },
 ]
 
 export function DepoimentosSection() {

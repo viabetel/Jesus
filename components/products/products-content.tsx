@@ -53,6 +53,8 @@ export function ProductsContent({ products }: { products: Product[] }) {
     return [...seen.entries()].map(([name, value]) => ({ name, value }))
   }, [products])
 
+  const categoryLabel = (name: string) => name === "Baby Look" ? "Feminino" : name
+
   const setSingleUrl = (next: typeof filters, nextQ = q) => {
     const params = new URLSearchParams()
     if (next.categoria[0]) params.set("categoria", next.categoria[0])
@@ -173,7 +175,7 @@ export function ProductsContent({ products }: { products: Product[] }) {
       </div>
 
       <FilterSection title="Categoria" count={filters.categoria.length}>
-        {[...categories.map(c => [c.name, c.slug] as const), ["Lançamentos", "lancamentos"] as const, ["Promoções", "promocoes"] as const].map(([label, slug]) => (
+        {[...categories.map(c => [categoryLabel(c.name), c.slug] as const), ["Lançamentos", "lancamentos"] as const, ["Promoções", "promocoes"] as const].map(([label, slug]) => (
           <Checkbox key={slug} label={label} count={products.filter(p => slug === "lancamentos" ? p.isNew : slug === "promocoes" ? p.isPromotion : p.category === categories.find(c => c.slug === slug)?.name).length} checked={filters.categoria.includes(slug)} onChange={() => toggle("categoria", slug)} />
         ))}
       </FilterSection>

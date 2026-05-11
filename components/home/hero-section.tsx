@@ -5,32 +5,42 @@ import Link from "next/link"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
+import { homeMedia } from "@/lib/home-media"
 
 const slides = [
   {
-    kicker: "Novo Drop Disponível",
-    title: "Camisetas cristãs para usar sua fé no dia a dia",
-    sub: "Peças confortáveis, estilosas e com mensagens de propósito.",
-    img: "/hero/hero-main.jpg",
-    position: "object-[82%_center]",
+    kicker: "Moda cristã multisex",
+    title: "Camisetas cristãs para homens e mulheres",
+    sub: "Peças confortáveis, modernas e com mensagens de propósito para vestir a fé no dia a dia.",
+    img: homeMedia.hero.main.src,
+    position: homeMedia.hero.main.position,
     cta: "Ver Catálogo",
     ctaHref: "/produtos",
   },
   {
-    kicker: "Oversized",
-    title: "Modelagem ampla, presença e propósito",
-    sub: "Camisetas oversized para looks casuais com identidade cristã.",
-    img: "/hero/hero-oversized.jpg",
-    position: "object-[82%_center]",
-    cta: "Ver Oversized",
-    ctaHref: "/produtos?categoria=oversized",
+    kicker: "Linha Masculina",
+    title: "Presença, conforto e propósito",
+    sub: "Camisetas masculinas e oversized para uma rotina com identidade cristã.",
+    img: homeMedia.hero.masculino.src,
+    position: homeMedia.hero.masculino.position,
+    cta: "Ver Masculino",
+    ctaHref: "/produtos?categoria=camisetas",
+  },
+  {
+    kicker: "Linha Feminina",
+    title: "Leveza, mensagem e propósito",
+    sub: "Peças femininas com caimento confortável, estilo discreto e identidade cristã.",
+    img: homeMedia.hero.feminino.src,
+    position: homeMedia.hero.feminino.position,
+    cta: "Ver Feminino",
+    ctaHref: "/produtos?categoria=baby-look",
   },
   {
     kicker: "Pronta Entrega",
     title: "Escolha sua peça e finalize pelo WhatsApp",
     sub: "Atendimento direto, compra simples e peças disponíveis para envio ou retirada.",
-    img: "/hero/hero-pronta-entrega.jpg",
-    position: "object-[80%_center]",
+    img: homeMedia.hero.prontaEntrega.src,
+    position: homeMedia.hero.prontaEntrega.position,
     cta: "Comprar pelo WhatsApp",
     ctaHref: createWhatsAppLink(WHATSAPP_NUMBER, "Olá! Vi o catálogo e quero uma peça de pronta entrega."),
     external: true,

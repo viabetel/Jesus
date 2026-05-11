@@ -4,9 +4,9 @@ import { WHATSAPP_NUMBER, WHATSAPP_DISPLAY, STORE_EMAIL, createWhatsAppLink } fr
 
 const cols = {
   "Loja": [
-    { label: "Camisetas", href: "/produtos?categoria=camisetas" },
+    { label: "Masculino", href: "/produtos?categoria=camisetas" },
+    { label: "Feminino", href: "/produtos?categoria=baby-look" },
     { label: "Oversized", href: "/produtos?categoria=oversized" },
-    { label: "Baby Look", href: "/produtos?categoria=baby-look" },
     { label: "Lançamentos", href: "/produtos?categoria=lancamentos" },
     { label: "Promoções", href: "/produtos?categoria=promocoes" },
     { label: "Pronta Entrega", href: "/produtos?destaque=pronta-entrega" },
@@ -62,7 +62,7 @@ export function FashionFooter() {
             Fashion<span className="text-[18px] not-italic font-normal align-top ml-0.5 sm:text-[24px]">®</span>
           </span>
           <p className="mt-4 text-[12px] leading-relaxed text-white/55 max-w-xs sm:mt-6 sm:text-[13px]">
-            Moda cristã com propósito. Camisetas, oversized e baby looks com qualidade editorial. Compre online ou retire em Juiz de Fora/MG.
+            Moda cristã multisex com propósito. Camisetas masculinas, femininas e oversized com qualidade editorial. Compre online ou retire em Juiz de Fora/MG.
           </p>
           <div className="mt-5 space-y-2 text-[12px] text-white/65 sm:mt-7 sm:space-y-2.5 sm:text-[13px]">
             <div className="flex items-center gap-2.5">

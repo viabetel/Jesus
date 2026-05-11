@@ -8,20 +8,21 @@ import { Icon } from "@/components/fashion/Icon"
 import { useCart } from "@/contexts/cart-context"
 import { useFavorites } from "@/contexts/favorites-context"
 import { SearchDialog } from "@/components/search-dialog"
+import { homeMedia } from "@/lib/home-media"
 
-/* ─── Nav data (matches FASHION exactly) ─── */
+/* ─── Nav data — Fashion Store cristã multisex ─── */
 const NAV = [
   {
-    label: "Camisetas", key: "camisetas", href: "/produtos?categoria=camisetas",
-    hero: { title: "Camisetas Cristãs", kicker: "Mensagem de Fé no Dia a Dia", img: "/menu/mega-camisetas.jpg" },
+    label: "Masculino", key: "masculino", href: "/produtos?categoria=camisetas",
+    hero: { title: "Linha Masculina", kicker: "Camisetas cristãs para homens", img: homeMedia.menu.masculino.src },
     tabs: [
-      { name: "Por Estilo", links: [
-        { label: "Todas as Camisetas", href: "/produtos?categoria=camisetas" },
-        { label: "Estampadas", href: "/produtos?categoria=camisetas" },
-        { label: "Versículos", href: "/produtos?categoria=camisetas" },
-        { label: "Lettering", href: "/produtos?categoria=camisetas" },
+      { name: "Comprar", links: [
+        { label: "Todas as peças masculinas", href: "/produtos?categoria=camisetas" },
+        { label: "Camisetas masculinas", href: "/produtos?categoria=camisetas" },
+        { label: "Oversized masculino", href: "/produtos?categoria=oversized" },
+        { label: "Pronta entrega", href: "/produtos?categoria=camisetas&destaque=pronta-entrega" },
       ]},
-      { name: "Por Tamanho", links: [
+      { name: "Por tamanho", links: [
         { label: "Tamanho P", href: "/produtos?categoria=camisetas&tamanho=P" },
         { label: "Tamanho M", href: "/produtos?categoria=camisetas&tamanho=M" },
         { label: "Tamanho G", href: "/produtos?categoria=camisetas&tamanho=G" },
@@ -30,50 +31,55 @@ const NAV = [
     ],
   },
   {
-    label: "Oversized", key: "oversized", href: "/produtos?categoria=oversized",
-    hero: { title: "Oversized", kicker: "Modelagem ampla, presença e propósito", img: "/menu/mega-oversized.jpg" },
+    label: "Feminino", key: "feminino", href: "/produtos?categoria=baby-look",
+    hero: { title: "Linha Feminina", kicker: "Peças cristãs com leveza e propósito", img: homeMedia.menu.feminino.src },
     tabs: [
-      { name: "Caimento", links: [
-        { label: "Todas Oversized", href: "/produtos?categoria=oversized" },
-        { label: "Streetwear", href: "/produtos?categoria=oversized" },
-        { label: "Casual", href: "/produtos?categoria=oversized" },
+      { name: "Comprar", links: [
+        { label: "Todas as peças femininas", href: "/produtos?categoria=baby-look" },
+        { label: "Camisetas femininas", href: "/produtos?categoria=baby-look" },
+        { label: "Lançamentos", href: "/produtos?categoria=lancamentos" },
+        { label: "Pronta entrega", href: "/produtos?categoria=baby-look&destaque=pronta-entrega" },
       ]},
-      { name: "Estampa", links: [
-        { label: "Estampa Frontal", href: "/produtos?categoria=oversized" },
-        { label: "Estampa nas Costas", href: "/produtos?categoria=oversized" },
-        { label: "Mínimas", href: "/produtos?categoria=oversized" },
+      { name: "Por tamanho", links: [
+        { label: "Tamanho P", href: "/produtos?categoria=baby-look&tamanho=P" },
+        { label: "Tamanho M", href: "/produtos?categoria=baby-look&tamanho=M" },
+        { label: "Tamanho G", href: "/produtos?categoria=baby-look&tamanho=G" },
+        { label: "Tamanho GG", href: "/produtos?categoria=baby-look&tamanho=GG" },
       ]},
     ],
   },
   {
-    label: "Baby Look", key: "babylook", href: "/produtos?categoria=baby-look",
-    hero: { title: "Baby Look", kicker: "Leve, feminina e com propósito", img: "/menu/mega-baby-look.jpg" },
+    label: "Oversized", key: "oversized", href: "/produtos?categoria=oversized",
+    hero: { title: "Oversized", kicker: "Modelagem ampla, presença e propósito", img: homeMedia.menu.oversized.src },
     tabs: [
-      { name: "Modelagem", links: [
-        { label: "Todas Baby Looks", href: "/produtos?categoria=baby-look" },
-        { label: "Justa", href: "/produtos?categoria=baby-look" },
-        { label: "Soltinha", href: "/produtos?categoria=baby-look" },
+      { name: "Comprar", links: [
+        { label: "Todos oversized", href: "/produtos?categoria=oversized" },
+        { label: "Masculino", href: "/produtos?categoria=oversized" },
+        { label: "Feminino", href: "/produtos?categoria=oversized" },
+        { label: "Novidades", href: "/produtos?categoria=lancamentos" },
       ]},
-      { name: "Estilo", links: [
-        { label: "Estampadas", href: "/produtos?categoria=baby-look" },
-        { label: "Versículos", href: "/produtos?categoria=baby-look" },
-        { label: "Lettering", href: "/produtos?categoria=baby-look" },
+      { name: "Por tamanho", links: [
+        { label: "Tamanho P", href: "/produtos?categoria=oversized&tamanho=P" },
+        { label: "Tamanho M", href: "/produtos?categoria=oversized&tamanho=M" },
+        { label: "Tamanho G", href: "/produtos?categoria=oversized&tamanho=G" },
+        { label: "Tamanho GG", href: "/produtos?categoria=oversized&tamanho=GG" },
       ]},
     ],
   },
   {
     label: "Coleções", key: "colecoes", href: "/produtos",
-    hero: { title: "Coleções", kicker: "Escolha por estilo", img: "/menu/mega-colecoes.jpg" },
+    hero: { title: "Coleções", kicker: "Escolha por mensagem, estilo ou ocasião", img: homeMedia.menu.colecoes.src },
     tabs: [
       { name: "Em Alta", links: [
         { label: "Todos os Produtos", href: "/produtos" },
         { label: "Lançamentos", href: "/produtos?categoria=lancamentos" },
         { label: "Mais Vendidos", href: "/produtos?destaque=mais-vendidos" },
+        { label: "Para Presentear", href: "/produtos" },
       ]},
       { name: "Categorias", links: [
-        { label: "Camisetas", href: "/produtos?categoria=camisetas" },
+        { label: "Masculino", href: "/produtos?categoria=camisetas" },
+        { label: "Feminino", href: "/produtos?categoria=baby-look" },
         { label: "Oversized", href: "/produtos?categoria=oversized" },
-        { label: "Baby Look", href: "/produtos?categoria=baby-look" },
       ]},
     ],
   },

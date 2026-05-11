@@ -2,11 +2,12 @@
 
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
+import { homeMedia } from "@/lib/home-media"
 
 const items = [
-  { t: "Look casual com oversized", s: "Camiseta + jeans + tênis branco.", img: "/lookbook/look-oversized.jpg", gradient: "from-stone-700 to-stone-900" },
-  { t: "Camiseta cristã no dia a dia", s: "Combinação leve para qualquer agenda.", img: "/lookbook/look-camiseta.jpg", gradient: "from-zinc-700 to-neutral-900" },
-  { t: "Baby look com composição leve", s: "Movimento, conforto e propósito.", img: "/lookbook/look-baby-look.jpg", gradient: "from-rose-700 to-stone-900" },
+  { t: "Oversized com propósito", s: "Modelagem ampla, conforto e presença.", img: homeMedia.lookbook.oversized.src, position: homeMedia.lookbook.oversized.position, gradient: "from-stone-700 to-stone-900" },
+  { t: "Camiseta cristã no dia a dia", s: "Combinação leve para qualquer agenda.", img: homeMedia.lookbook.casual.src, position: homeMedia.lookbook.casual.position, gradient: "from-zinc-700 to-neutral-900" },
+  { t: "Linha feminina com propósito", s: "Leveza, modéstia e mensagem no dia a dia.", img: homeMedia.lookbook.feminino.src, position: homeMedia.lookbook.feminino.position, gradient: "from-rose-700 to-stone-900" },
 ]
 
 export function LookbookSection() {
@@ -26,7 +27,7 @@ export function LookbookSection() {
                 src={it.img}
                 alt={it.t}
                 fill
-                className="object-cover transition-transform duration-[1200ms] group-hover:scale-[1.05]"
+                className={`object-cover ${it.position} transition-transform duration-[1200ms] group-hover:scale-[1.05]`}
                 quality={95}
                 sizes="(max-width:768px) 100vw, 33vw"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}

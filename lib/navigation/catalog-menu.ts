@@ -1,3 +1,5 @@
+import { homeMedia } from "@/lib/home-media"
+
 /**
  * Catalog Menu — Commercial Edition (links reais)
  *
@@ -45,7 +47,7 @@ export interface MegaMenuItem {
 
 export const catalogMenu: MegaMenuItem[] = [
   {
-    label: "Camisetas",
+    label: "Masculino",
     href: "/produtos?categoria=camisetas",
     sections: [
       {
@@ -68,11 +70,11 @@ export const catalogMenu: MegaMenuItem[] = [
       },
     ],
     featured: {
-      image: "/menu/mega-camisetas.jpg",
+      image: homeMedia.menu.masculino.src,
       eyebrow: "NOVO DROP",
-      title: "Camisetas com propósito",
-      subtitle: "Peças cristãs para usar sua fé no dia a dia.",
-      cta: "Ver camisetas",
+      title: "Linha masculina com propósito",
+      subtitle: "Camisetas cristãs masculinas para vestir sua fé no dia a dia.",
+      cta: "Ver masculino",
       href: "/produtos?categoria=camisetas",
     },
   },
@@ -99,7 +101,7 @@ export const catalogMenu: MegaMenuItem[] = [
       },
     ],
     featured: {
-      image: "/menu/mega-oversized.jpg",
+      image: homeMedia.menu.oversized.src,
       eyebrow: "STREETWEAR",
       title: "Modelagem oversized",
       subtitle: "Caimento amplo, confortável e urbano.",
@@ -108,13 +110,13 @@ export const catalogMenu: MegaMenuItem[] = [
     },
   },
   {
-    label: "Baby Look",
+    label: "Feminino",
     href: "/produtos?categoria=baby-look",
     sections: [
       {
         title: "Comprar",
         links: [
-          { name: "Todas baby looks", href: "/produtos?categoria=baby-look" },
+          { name: "Todas as peças femininas", href: "/produtos?categoria=baby-look" },
           { name: "Mais vendidas", href: "/produtos?categoria=baby-look&destaque=mais-vendidos" },
           { name: "Novidades", href: "/produtos?categoria=lancamentos", badge: "Novo" },
           { name: "Pronta entrega", href: "/produtos?destaque=pronta-entrega" },
@@ -131,11 +133,11 @@ export const catalogMenu: MegaMenuItem[] = [
       },
     ],
     featured: {
-      image: "/menu/mega-baby-look.jpg",
+      image: homeMedia.menu.feminino.src,
       eyebrow: "FEMININO",
-      title: "Baby looks cristãs",
+      title: "Peças femininas cristãs",
       subtitle: "Peças leves, femininas e com mensagem.",
-      cta: "Ver baby looks",
+      cta: "Ver peças femininas",
       href: "/produtos?categoria=baby-look",
     },
   },
@@ -155,14 +157,14 @@ export const catalogMenu: MegaMenuItem[] = [
       {
         title: "Por categoria",
         links: [
-          { name: "Camisetas", href: "/produtos?categoria=camisetas" },
+          { name: "Masculino", href: "/produtos?categoria=camisetas" },
           { name: "Oversized", href: "/produtos?categoria=oversized" },
-          { name: "Baby Look", href: "/produtos?categoria=baby-look" },
+          { name: "Feminino", href: "/produtos?categoria=baby-look" },
         ],
       },
     ],
     featured: {
-      image: "/menu/mega-colecoes.jpg",
+      image: homeMedia.menu.colecoes.src,
       eyebrow: "CATÁLOGO",
       title: "Escolha por estilo",
       subtitle: "Encontre peças por categoria, tamanho e ocasião.",
@@ -192,7 +194,7 @@ export const catalogMenu: MegaMenuItem[] = [
       },
     ],
     featured: {
-      image: "/menu/mega-promocoes.jpg",
+      image: homeMedia.menu.promocoes.src,
       eyebrow: "OUTLET",
       title: "Ofertas especiais",
       subtitle: "Peças selecionadas com condições especiais.",
@@ -211,7 +213,7 @@ export const catalogMenu: MegaMenuItem[] = [
           { name: "Todos disponíveis", href: "/produtos?destaque=pronta-entrega" },
           { name: "Camisetas", href: "/produtos?categoria=camisetas&destaque=pronta-entrega" },
           { name: "Oversized", href: "/produtos?categoria=oversized&destaque=pronta-entrega" },
-          { name: "Baby Look", href: "/produtos?categoria=baby-look&destaque=pronta-entrega" },
+          { name: "Feminino", href: "/produtos?categoria=baby-look&destaque=pronta-entrega" },
         ],
       },
       {
@@ -223,7 +225,7 @@ export const catalogMenu: MegaMenuItem[] = [
       },
     ],
     featured: {
-      image: "/menu/mega-pronta-entrega.jpg",
+      image: homeMedia.menu.prontaEntrega.src,
       eyebrow: "COMPRA RÁPIDA",
       title: "Finalize pelo WhatsApp",
       subtitle: "Produtos prontos para atendimento imediato.",
@@ -255,9 +257,9 @@ export const mobileMenuGroups = [
   {
     title: "Comprar por categoria",
     items: [
-      { name: "Camisetas", href: "/produtos?categoria=camisetas" },
+      { name: "Masculino", href: "/produtos?categoria=camisetas" },
       { name: "Oversized", href: "/produtos?categoria=oversized" },
-      { name: "Baby Look", href: "/produtos?categoria=baby-look" },
+      { name: "Feminino", href: "/produtos?categoria=baby-look" },
       { name: "Pronta Entrega", href: "/produtos?destaque=pronta-entrega" },
       { name: "Promoções", href: "/produtos?categoria=promocoes" },
     ],

@@ -29,12 +29,12 @@ import { cn } from "@/lib/utils"
 const GRADIENTS: Record<string, string> = {
   "Camisetas":      "from-stone-800 via-stone-700 to-stone-900",
   "Oversized":      "from-zinc-900 via-neutral-800 to-zinc-900",
-  "Baby Look":      "from-rose-50 via-amber-50 to-stone-100",
+  "Feminino":      "from-rose-50 via-amber-50 to-stone-100",
   "Coleções":       "from-amber-50 via-orange-50 to-stone-100",
   "Promoções":      "from-red-900 via-red-800 to-stone-900",
   "Pronta Entrega": "from-emerald-900 via-emerald-800 to-stone-900",
 }
-const LIGHT_BG = new Set(["Baby Look", "Coleções"])
+const LIGHT_BG = new Set(["Feminino", "Coleções"])
 
 export function Header() {
   const pathname = usePathname()
