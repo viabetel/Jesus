@@ -189,7 +189,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const idx = prev.findIndex(r => r.productId === productId && r.variantSku === variantSku)
       if (idx >= 0) {
         const next = [...prev]
-        next[idx] = { ...next[idx], quantity: next[idx].quantity + quantity, lastSeenPrice: lastSeenPrice ?? next[idx].lastSeenPrice }
+        const newQty = next[idx].quantity + quantity
+        // Clamp: find maxQuantity from hydrated items if available
+        const hydrated = items.find(i => i.ref.productId === productId && i.ref.variantSku === variantSku)
+        const max = hydrated?.maxQuantity ?? Infinity
+        next[idx] = { ...next[idx], quantity: Math.min(newQty, max), lastSeenPrice: lastSeenPrice ?? next[idx].lastSeenPrice }
         return next
       }
       return [...prev, { productId, variantSku, quantity, lastSeenPrice }]
@@ -205,9 +209,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem(productId, variantSku)
       return
     }
+    // Clamp to maxQuantity if hydrated data available
+    const hydrated = items.find(i => i.ref.productId === productId && i.ref.variantSku === variantSku)
+    const max = hydrated?.maxQuantity ?? Infinity
+    const clamped = Math.min(quantity, max)
     setRefs(prev => prev.map(r =>
       r.productId === productId && r.variantSku === variantSku
-        ? { ...r, quantity }
+        ? { ...r, quantity: clamped }
         : r
     ))
   }

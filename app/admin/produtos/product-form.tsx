@@ -14,6 +14,9 @@ import { MediaManager } from "@/components/admin/media-manager"
 import { getPublishChecklist, type ChecklistInput } from "@/lib/services/publish-checklist"
 import { VariantGrid } from "./tabs/tab-variants"
 
+import { AdminShell } from "@/components/admin/admin-shell"
+import { statusLabel } from "@/components/admin/status-helpers"
+
 // ===== Constants =====
 const CATEGORIES: ProductCategory[] = [
   "Camisetas", "Oversized", "Baby Look", "Moletons", "Acessórios",
@@ -194,7 +197,7 @@ export function ProductForm({ initial }: { initial: Product | null }) {
   } as ChecklistInput
 
   return (
-    <div className="min-h-dvh bg-neutral-950 text-white">
+    <AdminShell title={isNew ? "Novo produto" : name || "Editar"} breadcrumb={[{ label: "Produtos", href: "/admin/produtos" }, { label: isNew ? "Novo" : name || "Editar" }]}>
       {/* ===== HEADER ===== */}
       <header className="sticky top-0 z-20 border-b border-neutral-800 bg-neutral-950/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
@@ -265,7 +268,7 @@ export function ProductForm({ initial }: { initial: Product | null }) {
                 </Field>
                 <Field label="Status">
                   <select value={status} onChange={e => setStatus(e.target.value as ProductStatus)} className={inputCls}>
-                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {STATUSES.map(s => <option key={s} value={s}>{statusLabel[s] || s}</option>)}
                   </select>
                 </Field>
                 <Field label="Slug" required hint="Lowercase, hífens, sem acento">
@@ -450,7 +453,7 @@ export function ProductForm({ initial }: { initial: Product | null }) {
                   disabled={saving}
                   className="flex h-9 items-center gap-1.5 rounded-lg border border-neutral-700 px-4 text-[11px] font-medium text-neutral-300 hover:bg-neutral-800 disabled:opacity-50"
                 >
-                  Salvar como rascunho
+                  Salvar como não publicado
                 </button>
                 <button
                   onClick={() => { setStatus("oculto"); handleSave() }}
@@ -470,7 +473,7 @@ export function ProductForm({ initial }: { initial: Product | null }) {
           </div>
         )}
       </div>
-    </div>
+    </AdminShell>
   )
 }
 

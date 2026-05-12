@@ -73,7 +73,7 @@ export function HeroSection() {
             priority={idx === 0}
             quality={95}
             className={`object-cover ${s.position} transition-transform ease-out duration-[8000ms] ${
-              idx === i ? "scale-[1.06]" : "scale-100"
+              idx === i ? "scale-[1.015]" : "scale-100"
             }`}
             sizes="100vw"
           />

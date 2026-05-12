@@ -1,8 +1,9 @@
 "use client"
+import { AdminShell } from "@/components/admin/admin-shell"
 import { useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { AlertCircle, AlertTriangle, Info, CheckCircle2, LogOut, ExternalLink } from "lucide-react"
+import { AlertCircle, AlertTriangle, Info, CheckCircle2, ExternalLink } from "lucide-react"
 import { validateCatalog, type Issue, type Severity } from "@/lib/data/catalog-validation"
 
 const sev: Record<Severity, { icon: typeof AlertCircle; cls: string }> = {
@@ -14,16 +15,11 @@ const sev: Record<Severity, { icon: typeof AlertCircle; cls: string }> = {
 export default function AdminCatalogoPage() {
   const router = useRouter()
   const result = useMemo(() => validateCatalog(), [])
-  const handleLogout = async () => { await fetch("/api/admin/logout", { method: "POST" }); router.push("/admin/login"); router.refresh() }
+  
 
   return (
-    <div className="min-h-dvh bg-neutral-950 text-white">
-      <header className="border-b border-neutral-800 px-4 py-3">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div className="flex items-center gap-2"><Link href="/admin" className="text-[10px] text-neutral-500 hover:text-neutral-300">← Admin</Link><h1 className="text-base font-semibold">Validações</h1></div>
-          <button onClick={handleLogout} className="flex items-center gap-1 rounded-lg border border-neutral-700 px-2.5 py-1 text-[10px] text-neutral-400 hover:text-white"><LogOut className="h-3 w-3" /> Sair</button>
-        </div>
-      </header>
+    <AdminShell title="Validações" breadcrumb={[{label:"Validações"}]}>
+      
       <main className="mx-auto max-w-4xl px-4 py-4">
         <div className="mb-4 grid grid-cols-4 gap-2">
           {[["Total", result.summary.total, ""], ["Erros", result.summary.errors, "text-red-400"], ["Avisos", result.summary.warnings, "text-yellow-400"], ["Info", result.summary.infos, "text-blue-400"]].map(([l, v, c]) => (
@@ -57,6 +53,6 @@ export default function AdminCatalogoPage() {
           )
         })}
       </main>
-    </div>
+    </AdminShell>
   )
 }

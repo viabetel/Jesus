@@ -87,15 +87,9 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
                 </button>
               ))}
             </div>
-            <div className="order-1 grid grid-cols-2 gap-3 sm:order-2">
-              <div className="relative col-span-2 aspect-[3/4] overflow-hidden bg-stone">
+            <div className="order-1 sm:order-2">
+              <div className="relative aspect-[3/4] overflow-hidden bg-stone">
                 <Image src={gallery[imgIdx] || gallery[0]} alt={product.name} fill priority className="object-cover" sizes="(max-width:1024px) 100vw, 55vw" />
-              </div>
-              <div className="relative aspect-[3/4] overflow-hidden bg-stone">
-                <Image src={gallery[(imgIdx + 1) % gallery.length] || gallery[0]} alt="" fill className="object-cover" sizes="30vw" />
-              </div>
-              <div className="relative aspect-[3/4] overflow-hidden bg-stone">
-                <Image src={gallery[(imgIdx + 2) % gallery.length] || gallery[0]} alt="" fill className="object-cover" sizes="30vw" />
               </div>
             </div>
           </div>
@@ -154,7 +148,7 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
               <div className="flex items-center border border-border h-14">
                 <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-full w-12 grid place-items-center"><Icon name="minus" size={13}/></button>
                 <span className="w-10 text-center text-[14px]">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="h-full w-12 grid place-items-center"><Icon name="plus" size={13}/></button>
+                <button onClick={() => setQuantity(Math.min(currentStock, quantity + 1))} disabled={quantity >= currentStock} className="h-full w-12 grid place-items-center disabled:opacity-30 disabled:cursor-not-allowed"><Icon name="plus" size={13}/></button>
               </div>
               <button onClick={handleAdd} disabled={!canAdd} className="flex-1 h-14 bg-ink text-white caps text-[12px] hover:bg-fg-soft transition disabled:opacity-45 disabled:cursor-not-allowed">
                 {inCart ? "Atualizar Sacola" : "Adicionar à Sacola"}

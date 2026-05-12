@@ -1,9 +1,10 @@
 "use client"
+import { AdminShell } from "@/components/admin/admin-shell"
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ChevronDown, ChevronRight, Copy, ExternalLink, AlertCircle, Check, Image as ImageIcon, Video, LogOut, Search, ChevronLeft } from "lucide-react"
+import { ChevronDown, ChevronRight, Copy, ExternalLink, AlertCircle, Check, Image as ImageIcon, Video, Search, ChevronLeft } from "lucide-react"
 import type { Product } from "@/lib/data/products"
 import { buildGalleryEntries, detectProvider } from "@/lib/data/media"
 
@@ -29,16 +30,11 @@ export default function AdminMidiasPage() {
   const filtered = useMemo(() => !search ? products : products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.slug.includes(search.toLowerCase())), [search])
   const totalPages = Math.ceil(filtered.length / PER_PAGE)
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-  const handleLogout = async () => { await fetch("/api/admin/logout", { method: "POST" }); router.push("/admin/login"); router.refresh() }
+  
 
   return (
-    <div className="min-h-dvh bg-neutral-950 text-white">
-      <header className="border-b border-neutral-800 px-4 py-3">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div className="flex items-center gap-2"><Link href="/admin" className="text-[10px] text-neutral-500 hover:text-neutral-300">← Admin</Link><h1 className="text-base font-semibold">Mídia</h1></div>
-          <button onClick={handleLogout} className="flex items-center gap-1 rounded-lg border border-neutral-700 px-2.5 py-1 text-[10px] text-neutral-400 hover:text-white"><LogOut className="h-3 w-3" /> Sair</button>
-        </div>
-      </header>
+    <AdminShell title="Mídias" breadcrumb={[{label:"Mídias"}]}>
+      
       <main className="mx-auto max-w-4xl px-4 py-4">
         <div className="relative mb-3"><Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-600" />
           <input type="search" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} placeholder="Buscar..." className="h-9 w-full rounded-lg border border-neutral-800 bg-neutral-900 pl-8 pr-3 text-xs text-white placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none" />
@@ -92,6 +88,6 @@ export default function AdminMidiasPage() {
           </div>
         )}
       </main>
-    </div>
+    </AdminShell>
   )
 }

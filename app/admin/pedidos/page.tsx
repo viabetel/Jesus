@@ -1,20 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, MessageCircle, RefreshCw, Package } from "lucide-react"
+import { MessageCircle, RefreshCw, Package } from "lucide-react"
 import { createWhatsAppLink, WHATSAPP_NUMBER } from "@/lib/whatsapp"
 import { whatsappLink } from "@/lib/phone"
 import type { Order, OrderStatus } from "@/lib/services/orders"
-
-const statusColors: Record<OrderStatus, string> = {
-  recebido: "bg-blue-900/40 text-blue-400",
-  confirmado: "bg-yellow-900/40 text-yellow-400",
-  enviado: "bg-purple-900/40 text-purple-400",
-  entregue: "bg-green-900/40 text-green-400",
-  cancelado: "bg-red-900/40 text-red-400",
-}
+import { AdminShell } from "@/components/admin/admin-shell"
+import { orderStatusLabel, orderStatusColor } from "@/components/admin/status-helpers"
 
 const statusFlow: OrderStatus[] = ["recebido", "confirmado", "enviado", "entregue"]
 
@@ -24,10 +17,8 @@ export default function AdminPedidosPage() {
   const [loading, setLoading] = useState(true)
 
   const fetchOrders = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/orders")
-      if (res.ok) setOrders(await res.json())
-    } catch { /* silently fail */ }
+    try { const res = await fetch("/api/admin/orders"); if (res.ok) setOrders(await res.json()) }
+    catch { /* silently fail */ }
     setLoading(false)
   }, [])
 
@@ -38,99 +29,100 @@ export default function AdminPedidosPage() {
     if (res.ok) fetchOrders()
   }
 
-  const handleLogout = async () => { await fetch("/api/admin/logout", { method: "POST" }); router.push("/admin/login"); router.refresh() }
-
   return (
-    <div className="min-h-dvh bg-neutral-950 text-white">
-      <header className="border-b border-neutral-800 px-4 py-3">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/admin" className="text-[10px] text-neutral-500 hover:text-neutral-300">← Admin</Link>
-            <h1 className="text-base font-semibold">Pedidos</h1>
-            <span className="text-[10px] text-neutral-600">{orders.length}</span>
+    <AdminShell title="Pedidos" breadcrumb={[{ label: "Pedidos" }]}>
+      <div className="max-w-4xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold sm:text-2xl">Pedidos</h1>
+            <p className="text-[12px] text-neutral-500">{orders.length} registrados</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={fetchOrders} className="text-neutral-500 hover:text-white"><RefreshCw className="h-3.5 w-3.5" /></button>
-            <button onClick={handleLogout} className="flex items-center gap-1 rounded-lg border border-neutral-700 px-2.5 py-1 text-[10px] text-neutral-400 hover:text-white"><LogOut className="h-3 w-3" /> Sair</button>
-          </div>
+          <button onClick={fetchOrders} className="flex items-center gap-1.5 rounded-lg border border-neutral-800 px-3 py-2 text-[11px] text-neutral-400 hover:text-white transition">
+            <RefreshCw className="h-3.5 w-3.5" /> Atualizar
+          </button>
         </div>
-      </header>
-      <main className="mx-auto max-w-4xl px-4 py-4">
-        {loading ? (
-          <p className="py-8 text-center text-xs text-neutral-600">Carregando...</p>
-        ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-12">
-            <Package className="h-8 w-8 text-neutral-700" />
-            <p className="text-xs text-neutral-500">Nenhum pedido registrado.</p>
-            <p className="max-w-xs text-center text-[10px] text-neutral-600">Pedidos aparecem aqui quando clientes finalizam pelo WhatsApp e o sistema registra.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {orders.map(order => (
-              <div key={order.id} className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-3">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <p className="text-xs font-semibold">{order.number}</p>
-                    <p className="text-[10px] text-neutral-500">{order.customerName} · {order.customerWhatsapp}</p>
-                    <p className="text-[9px] text-neutral-600">{new Date(order.createdAt).toLocaleString("pt-BR")}</p>
-                  </div>
-                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${statusColors[order.status]}`}>{order.status}</span>
-                </div>
 
-                {/* Items */}
-                <div className="mb-2 space-y-0.5">
-                  {order.items.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between text-[10px]">
-                      <span className="text-neutral-400">{item.quantity}× {item.productName} — {item.color} {item.size}</span>
-                      <span className="text-neutral-500">R$ {(item.price * item.quantity).toFixed(2)}</span>
+        <div className="mt-5">
+          {loading ? (
+            <p className="py-12 text-center text-xs text-neutral-600">Carregando...</p>
+          ) : orders.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <Package className="h-10 w-10 text-neutral-700" />
+              <p className="text-sm text-neutral-500">Nenhum pedido registrado.</p>
+              <p className="max-w-xs text-[11px] text-neutral-600">Pedidos aparecem quando clientes finalizam pelo site.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {orders.map(order => {
+                const customerLink = whatsappLink(order.customerWhatsapp, `Olá ${order.customerName}! Sobre seu pedido ${order.number}...`)
+                const fallback = createWhatsAppLink(WHATSAPP_NUMBER, `Sobre o pedido ${order.number}`)
+                const nextStatus = statusFlow.indexOf(order.status) >= 0 && statusFlow.indexOf(order.status) < statusFlow.length - 1
+                  ? statusFlow[statusFlow.indexOf(order.status) + 1]
+                  : null
+                const canChange = order.status !== "entregue" && order.status !== "cancelado"
+
+                return (
+                  <div key={order.id} className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-4 sm:p-5">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <p className="text-[14px] font-bold">{order.number}</p>
+                        <p className="text-[12px] text-neutral-400 mt-0.5">{order.customerName}</p>
+                        <p className="text-[11px] text-neutral-500">{order.customerWhatsapp}</p>
+                        <p className="text-[10px] text-neutral-600 mt-1">{new Date(order.createdAt).toLocaleString("pt-BR")}</p>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${orderStatusColor[order.status] || "bg-neutral-800 text-neutral-400"}`}>
+                        {orderStatusLabel[order.status] || order.status}
+                      </span>
                     </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between border-t border-neutral-800 pt-1.5">
-                  <p className="text-xs font-bold">R$ {order.total.toFixed(2)}</p>
-                  <div className="flex gap-1.5">
-                    {(() => {
-                      const customerLink = whatsappLink(
-                        order.customerWhatsapp,
-                        `Olá ${order.customerName}! Sobre seu pedido ${order.number}...`
-                      )
-                      const fallback = createWhatsAppLink(
-                        WHATSAPP_NUMBER,
-                        `Sobre o pedido ${order.number}`
-                      )
-                      return (
+
+                    {/* Items */}
+                    <div className="mb-3 space-y-1 border-t border-neutral-800 pt-3">
+                      {order.items.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <span className="text-neutral-400">{item.quantity}× {item.productName} — {item.color} {item.size}</span>
+                          <span className="text-neutral-500 font-mono">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {order.observation && (
+                      <p className="text-[11px] text-neutral-500 italic border-t border-neutral-800 pt-2 mb-2">&ldquo;{order.observation}&rdquo;</p>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between border-t border-neutral-800 pt-3">
+                      <p className="text-[15px] font-bold">R$ {order.total.toFixed(2)}</p>
+                      <div className="flex gap-2 flex-wrap">
                         <a
                           href={customerLink ?? fallback}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex h-6 items-center gap-1 rounded bg-[#25D366] px-2 text-[9px] font-medium text-white hover:bg-[#1DA851]"
-                          title={customerLink ? "Chamar cliente" : "WhatsApp inválido — abrindo loja"}
+                          className="flex h-8 items-center gap-1.5 rounded-lg bg-[#25D366] px-3 text-[11px] font-medium text-white hover:bg-[#1DA851] transition"
                         >
-                          <MessageCircle className="h-2.5 w-2.5" /> Chamar
+                          <MessageCircle className="h-3 w-3" /> Chamar cliente
                         </a>
-                      )
-                    })()}
-                    {order.status !== "entregue" && order.status !== "cancelado" && (
-                      <>
-                        {statusFlow.indexOf(order.status) < statusFlow.length - 1 && (
-                          <button onClick={() => updateStatus(order.id, statusFlow[statusFlow.indexOf(order.status) + 1])}
-                            className="flex h-6 items-center rounded bg-neutral-800 px-2 text-[9px] text-neutral-300 hover:bg-neutral-700">
-                            → {statusFlow[statusFlow.indexOf(order.status) + 1]}
+                        {canChange && nextStatus && (
+                          <button onClick={() => updateStatus(order.id, nextStatus)}
+                            className="flex h-8 items-center rounded-lg bg-neutral-800 px-3 text-[11px] text-neutral-300 hover:bg-neutral-700 transition">
+                            → {orderStatusLabel[nextStatus] || nextStatus}
                           </button>
                         )}
-                        <button onClick={() => updateStatus(order.id, "cancelado")}
-                          className="flex h-6 items-center rounded bg-red-950/50 px-2 text-[9px] text-red-400 hover:bg-red-900/50">
-                          Cancelar
-                        </button>
-                      </>
-                    )}
+                        {canChange && (
+                          <button onClick={() => updateStatus(order.id, "cancelado")}
+                            className="flex h-8 items-center rounded-lg bg-red-950/50 px-3 text-[11px] text-red-400 hover:bg-red-900/50 transition">
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </AdminShell>
   )
 }
