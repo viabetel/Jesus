@@ -32,7 +32,7 @@ export default function AdminHubPage() {
 
   const active = products.filter(p => p.status === "ativo").length
   const drafts = products.filter(p => p.status === "rascunho").length
-  const noCover = products.filter(p => !p.coverImage && (!p.images || p.images.length === 0)).length
+  const noCover = products.filter(p => !p.coverImage && (!p.images || p.images.length === 0 || p.images.every(img => !img))).length
   const noStock = products.filter(p => (p.variants || []).filter(v => v.active).reduce((s, v) => s + v.stock, 0) === 0).length
   const lowStock = products.filter(p => { const s = (p.variants || []).filter(v => v.active).reduce((a, v) => a + v.stock, 0); return s > 0 && s <= 5 }).length
   const pendingOrders = orders.filter(o => o.status === "recebido").length

@@ -104,7 +104,7 @@ export async function POST(request: Request) {
           slug: product.slug,
           price: product.price,
           originalPrice: product.originalPrice,
-          image: product.images[0] ?? "",
+          image: product.images[0] ?? "/brand/placeholder-product.svg",
           status: product.status,
         },
         variant: null,
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
         slug: product.slug,
         price: product.price,
         originalPrice: product.originalPrice,
-        image: product.images[0] ?? "",
+        image: product.images[0] || "/brand/placeholder-product.svg",
         status: product.status,
       },
       variant: variant

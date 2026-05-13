@@ -28,8 +28,8 @@ export function ProductCard({ product }: { product: CardProduct }) {
   const colors = getProductColors(product)
   const hasVideo = product.hasVideo ?? !!product.video
 
-  const coverImg = product.coverImage ?? product.images[0]
-  const hoverImg = product.hoverImage ?? product.images[1]
+  const coverImg = product.coverImage || product.images.find(img => !!img) || null
+  const hoverImg = product.hoverImage || (product.images.length > 1 ? product.images[1] : null)
   const hasHover = !!hoverImg
 
   // Badge logic: olive for "Pronta Entrega", tan for "Lançamento"/"Mais Vendido", red for promo

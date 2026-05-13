@@ -27,15 +27,20 @@ export default function AdminMidiasPage() {
   useEffect(() => {
     fetch("/api/admin/products").then(r => r.json()).then((data) => { setProducts(Array.isArray(data) ? data : []); setLoading(false) }).catch(() => setLoading(false))
   }, [])
-  const filtered = useMemo(() => !search ? products : products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.slug.includes(search.toLowerCase())), [search])
+  const filtered = useMemo(() => !search ? products : products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.slug.includes(search.toLowerCase())), [search, products])
   const totalPages = Math.ceil(filtered.length / PER_PAGE)
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
   
 
   return (
     <AdminShell title="Mídias" breadcrumb={[{label:"Mídias"}]}>
-      
-      <main className="mx-auto max-w-4xl px-4 py-4">
+      <div className="max-w-4xl">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+          <div>
+            <h1 className="text-xl font-bold sm:text-2xl">Mídias</h1>
+            <p className="mt-1 text-[12px] text-neutral-500">{products.length} produtos · Gerencie imagens e vídeos do catálogo.</p>
+          </div>
+        </div>
         <div className="relative mb-3"><Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-600" />
           <input type="search" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} placeholder="Buscar..." className="h-9 w-full rounded-lg border border-neutral-800 bg-neutral-900 pl-8 pr-3 text-xs text-white placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none" />
         </div>
@@ -87,7 +92,7 @@ export default function AdminMidiasPage() {
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-800 text-neutral-400 hover:bg-neutral-800 disabled:opacity-30"><ChevronRight className="h-3.5 w-3.5" /></button>
           </div>
         )}
-      </main>
+      </div>
     </AdminShell>
   )
 }

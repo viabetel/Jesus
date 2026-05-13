@@ -78,7 +78,7 @@ export default function AdminProdutosPage() {
 
   function getAlerts(p: Product): string[] {
     const a: string[] = []
-    if (!p.images || p.images.length === 0) a.push("Sem imagem")
+    if (!p.images || p.images.length === 0 || p.images.every(img => !img)) a.push("Sem imagem")
     if (!p.variants || p.variants.length === 0) a.push("Sem variantes")
     if (getStock(p) === 0 && p.status === "ativo") a.push("Sem estoque")
     return a

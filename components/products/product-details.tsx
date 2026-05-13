@@ -37,14 +37,19 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
   const [imgIdx, setImgIdx] = useState(0)
 
   const gallery = useMemo(() => {
-    if (structuredMedia.length === 0) return product.images.length ? product.images : ["/brand/placeholder-product.svg"]
+    if (structuredMedia.length === 0) {
+      const validImages = product.images.filter(img => !!img)
+      return validImages.length ? validImages : ["/brand/placeholder-product.svg"]
+    }
     const key = selectedColor ? colorKey(selectedColor.name) : null
     const byColor = key
       ? structuredMedia.filter(m => m.colorKey === key && m.kind === "image").sort((a,b) => a.sortOrder - b.sortOrder)
       : []
     const general = structuredMedia.filter(m => !m.colorKey && m.kind === "image").sort((a,b) => a.sortOrder - b.sortOrder)
-    const imgs = (byColor.length ? byColor : general).map(m => m.url)
-    return imgs.length ? imgs : (product.images.length ? product.images : ["/brand/placeholder-product.svg"])
+    const imgs = (byColor.length ? byColor : general).map(m => m.url).filter(url => !!url)
+    if (imgs.length) return imgs
+    const validFallback = product.images.filter(img => !!img)
+    return validFallback.length ? validFallback : ["/brand/placeholder-product.svg"]
   }, [structuredMedia, selectedColor, product.images])
 
   const { addItem, isInCart } = useCart()
@@ -78,18 +83,18 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
           <Link href="/" className="hover:text-ink">Fashion Store</Link> / <Link href="/produtos" className="hover:text-ink">Catálogo</Link> / <span className="text-ink">{product.name}</span>
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-[1.45fr_1fr] lg:gap-16">
-          <div className="grid gap-4 sm:grid-cols-[80px_1fr] sm:gap-5">
-            <div className="order-2 flex gap-3 overflow-x-auto sm:order-1 sm:flex-col sm:overflow-visible">
+        <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-14 xl:grid-cols-[1.15fr_1fr]">
+          <div className="grid gap-3 sm:grid-cols-[72px_1fr] sm:gap-4">
+            <div className="order-2 flex gap-2.5 overflow-x-auto sm:order-1 sm:flex-col sm:overflow-visible">
               {gallery.slice(0, 6).map((g, i) => (
-                <button key={g + i} onClick={() => setImgIdx(i)} className={`relative aspect-[3/4] w-20 shrink-0 overflow-hidden bg-stone sm:w-auto ${i === imgIdx ? "ring-1 ring-ink" : ""}`}>
-                  <Image src={g} alt="" fill className="object-cover" sizes="80px" />
+                <button key={g + i} onClick={() => setImgIdx(i)} className={`relative aspect-[3/4] w-16 shrink-0 overflow-hidden bg-stone sm:w-auto ${i === imgIdx ? "ring-1 ring-ink" : ""}`}>
+                  <Image src={g} alt="" fill className="object-cover" sizes="72px" />
                 </button>
               ))}
             </div>
             <div className="order-1 sm:order-2">
-              <div className="relative aspect-[3/4] overflow-hidden bg-stone">
-                <Image src={gallery[imgIdx] || gallery[0]} alt={product.name} fill priority className="object-cover" sizes="(max-width:1024px) 100vw, 55vw" />
+              <div className="relative aspect-[3/4] max-h-[520px] overflow-hidden bg-stone lg:max-h-[580px]">
+                <Image src={gallery[imgIdx] || gallery[0]} alt={product.name} fill priority className="object-cover" sizes="(max-width:1024px) 100vw, 48vw" />
               </div>
             </div>
           </div>

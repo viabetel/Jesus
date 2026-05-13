@@ -24,6 +24,7 @@ export function CartContent() {
   const [step, setStep] = useState<"cart" | "checkout" | "confirmed">("cart")
   const [name, setName] = useState("")
   const [whatsNum, setWhatsNum] = useState("")
+  const [email, setEmail] = useState("")
   const [observation, setObs] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -88,6 +89,7 @@ export function CartContent() {
     setError("")
     if (!name.trim()) { setError("Informe seu nome."); return }
     if (!whatsNum.trim()) { setError("Informe seu WhatsApp."); return }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Informe um e-mail válido."); return }
 
     setSubmitting(true)
     try {
@@ -100,6 +102,7 @@ export function CartContent() {
         body: JSON.stringify({
           customerName: name.trim(),
           customerWhatsapp: whatsNum.trim(),
+          customerEmail: email.trim(),
           items: refs.map(r => ({ productId: r.productId, variantSku: r.variantSku, quantity: r.quantity })),
           observation: observation.trim() || undefined,
         }),
@@ -138,6 +141,11 @@ export function CartContent() {
           <div>
             <label className="caps text-[10px] text-muted-fg block mb-2">WhatsApp *</label>
             <input type="tel" value={whatsNum} onChange={e => setWhatsNum(formatPhone(e.target.value))} placeholder="(32) 99999-9999"
+              className="w-full h-12 px-4 border border-[var(--border)] bg-transparent text-[14px] outline-none focus:border-[var(--ink)] transition" />
+          </div>
+          <div>
+            <label className="caps text-[10px] text-muted-fg block mb-2">E-mail *</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com"
               className="w-full h-12 px-4 border border-[var(--border)] bg-transparent text-[14px] outline-none focus:border-[var(--ink)] transition" />
           </div>
           <div>
@@ -190,7 +198,7 @@ export function CartContent() {
               <div key={`${item.ref.productId}-${item.ref.variantSku}`} className="py-6 grid gap-4 md:grid-cols-[1fr_120px_120px_120px_40px] md:items-center">
                 <div className="flex gap-4">
                   <Link href={`/produto/${product.slug}`} className="relative h-28 w-20 bg-[var(--stone)] overflow-hidden shrink-0 sm:h-32 sm:w-24">
-                    <Image src={product.image || "/brand/placeholder-product.svg"} alt={product.name} fill className="object-cover" sizes="96px" />
+                    <Image src={product.image && product.image.length > 1 ? product.image : "/brand/placeholder-product.svg"} alt={product.name} fill className="object-cover" sizes="96px" />
                   </Link>
                   <div>
                     <Link href={`/produto/${product.slug}`} className="caps text-[12px] text-[var(--ink)] hover:underline underline-offset-4">{product.name}</Link>

@@ -199,7 +199,7 @@ export function ProductForm({ initial }: { initial: Product | null }) {
   return (
     <AdminShell title={isNew ? "Novo produto" : name || "Editar"} breadcrumb={[{ label: "Produtos", href: "/admin/produtos" }, { label: isNew ? "Novo" : name || "Editar" }]}>
       {/* ===== HEADER ===== */}
-      <header className="sticky top-0 z-20 border-b border-neutral-800 bg-neutral-950/95 backdrop-blur-sm">
+      <header className="sticky top-12 lg:top-0 z-20 border-b border-neutral-800 bg-neutral-950/95 backdrop-blur-sm -mx-4 lg:-mx-6 px-4 lg:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <Link href="/admin/produtos" className="flex h-7 w-7 items-center justify-center rounded text-neutral-500 hover:bg-neutral-800 hover:text-white">

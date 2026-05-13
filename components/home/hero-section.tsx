@@ -57,7 +57,7 @@ export function HeroSection() {
   }, [i, len])
 
   return (
-    <section className="relative h-[100vh] min-h-[600px] max-h-[920px] w-full overflow-hidden bg-[var(--ink)]">
+    <section className="relative h-[85vh] min-h-[520px] max-h-[780px] w-full overflow-hidden bg-[var(--ink)] sm:h-[90vh] sm:max-h-[860px]">
       {/* Slides */}
       {slides.map((s, idx) => (
         <div
@@ -71,14 +71,14 @@ export function HeroSection() {
             alt=""
             fill
             priority={idx === 0}
-            quality={95}
-            className={`object-cover ${s.position} transition-transform ease-out duration-[8000ms] ${
-              idx === i ? "scale-[1.015]" : "scale-100"
+            quality={85}
+            className={`object-cover object-top transition-transform ease-out duration-[8000ms] ${
+              idx === i ? "scale-[1.005]" : "scale-100"
             }`}
             sizes="100vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/0 to-black/55" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/0 to-black/55" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/10" />
         </div>
       ))}
 
