@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { createOrder, type CreateOrderInput } from "@/lib/services/orders"
+import { sendOrderConfirmation, sendAdminOrderNotification } from "@/lib/services/email"
+import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
 
 /**
  * POST /api/orders — Public endpoint for customers to place orders.
@@ -69,6 +71,33 @@ export async function POST(request: Request) {
         : "Erro ao processar pedido."
       return NextResponse.json({ error: msg }, { status: 400 })
     }
+
+    // Fire-and-forget email notifications (don't block response)
+    const order = result.order
+    const emailData = {
+      customerName: order.customerName,
+      customerEmail: order.customerEmail || customerEmail || "",
+      orderNumber: order.number,
+      items: order.items.map(it => ({
+        productName: it.productName,
+        color: it.color,
+        size: it.size,
+        quantity: it.quantity,
+        price: it.price,
+      })),
+      total: order.total,
+      whatsappLink: createWhatsAppLink(
+        WHATSAPP_NUMBER,
+        `Olá! Fiz o pedido ${order.number} pelo site e quero combinar pagamento/entrega.`
+      ),
+    }
+    sendOrderConfirmation(emailData).catch(() => {})
+    sendAdminOrderNotification({
+      orderNumber: order.number,
+      customerName: order.customerName,
+      total: order.total,
+      itemCount: order.items.length,
+    }).catch(() => {})
 
     return NextResponse.json({
       success: true,

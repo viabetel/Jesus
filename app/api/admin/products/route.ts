@@ -5,6 +5,7 @@ import {
   createProduct,
   type ProductInput,
 } from "@/lib/services/products-repo"
+import { getSupabase } from "@/lib/supabase"
 
 /**
  * GET /api/admin/products → lista TODOS (inclui rascunho/oculto)
@@ -17,6 +18,41 @@ export async function GET(request: Request) {
   }
   try {
     const products = await getAllProducts({ includeAll: true })
+    
+    // Enrich with cover images from product_media table
+    const sb = getSupabase()
+    if (sb && products.length > 0) {
+      const ids = products.map(p => p.id)
+      const { data: covers } = await sb
+        .from("product_media")
+        .select("product_id, url, role")
+        .in("product_id", ids)
+        .eq("kind", "image")
+        .in("role", ["cover", "gallery"])
+        .order("role")
+        .order("sort_order")
+      
+      if (covers && covers.length > 0) {
+        // Map: productId → first cover URL (or first gallery if no cover)
+        const coverMap = new Map<string, string>()
+        for (const row of covers) {
+          const pid = String(row.product_id)
+          if (!coverMap.has(pid)) {
+            coverMap.set(pid, String(row.url))
+          } else if (row.role === "cover") {
+            // Cover overrides gallery
+            coverMap.set(pid, String(row.url))
+          }
+        }
+        // Attach coverImage to each product
+        const enriched = products.map(p => ({
+          ...p,
+          coverImage: coverMap.get(p.id) || null,
+        }))
+        return NextResponse.json(enriched)
+      }
+    }
+
     return NextResponse.json(products)
   } catch (e) {
     return NextResponse.json(

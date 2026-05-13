@@ -7,6 +7,8 @@ import {
   type CreateOrderInput,
 } from "@/lib/services/orders"
 import { isAdminAuthenticated } from "@/lib/auth/admin"
+import { sendOrderStatusUpdate } from "@/lib/services/email"
+import { orderStatusLabel } from "@/components/admin/status-helpers"
 
 /**
  * GET   → admin lista pedidos (REQUER cookie fs_admin)
@@ -115,6 +117,18 @@ export async function PATCH(request: Request) {
     }
     const updated = await updateOrderStatus(orderId, status)
     if (!updated) return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 })
+    
+    // Fire-and-forget email notification
+    if (updated.customerEmail) {
+      sendOrderStatusUpdate({
+        customerName: updated.customerName,
+        customerEmail: updated.customerEmail,
+        orderNumber: updated.number,
+        newStatus: status,
+        statusMessage: orderStatusLabel[status] || status,
+      }).catch(() => {})
+    }
+
     return NextResponse.json(updated)
   } catch (e) {
     return NextResponse.json(
