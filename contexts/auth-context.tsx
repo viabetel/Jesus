@@ -1,6 +1,10 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
+import { getSupabaseBrowser } from "@/lib/supabase-browser"
+import type { User as SupaUser, Session } from "@supabase/supabase-js"
+
+// ===== Types =====
 
 export type User = {
   id: string
@@ -23,8 +27,7 @@ export type Order = {
     price: number
   }[]
   total: number
-  status: "Enviado para atendimento" | "Em confirmação" | "Confirmado" | "Cancelado" | "Entregue"
-  address?: string
+  status: string
   observation?: string
 }
 
@@ -33,81 +36,32 @@ type AuthContextType = {
   orders: Order[]
   isAuthenticated: boolean
   isHydrated: boolean
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
   register: (data: {
     name: string
     email: string
     whatsapp: string
     password: string
-  }) => Promise<boolean>
-  logout: () => void
+  }) => Promise<{ ok: boolean; error?: string }>
+  logout: () => Promise<void>
   updateUser: (data: Partial<User>) => void
-  addOrder: (order: Omit<Order, "id" | "orderNumber" | "date" | "status">) => Order
+  refreshOrders: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const STORAGE_KEYS = {
-  user: "fashion-store-user",
-  users: "fashion-store-users",
-  orders: "fashion-store-orders",
-  orderCounter: "fashion-store-order-counter",
-} as const
+// ===== Helper: map Supabase user to our User type =====
 
-/**
- * Auth Context — MVP / Local Storage
- *
- * ⚠️ LIMITAÇÕES ATUAIS:
- * - Dados salvos APENAS no localStorage do navegador
- * - Conta só existe no navegador/dispositivo onde foi criada
- * - Pedidos do checkout são salvos aqui E no servidor (Supabase)
- * - Favoritos só existem no localStorage
- *
- * 🚀 MIGRAÇÃO PARA PRODUÇÃO:
- * Para login real por usuário em qualquer dispositivo:
- * 1. Habilitar Supabase Auth (email/senha)
- * 2. Migrar tabela `users` para Supabase
- * 3. Vincular `orders` ao user_id do Supabase Auth
- * 4. Migrar `favorites` para tabela no Supabase
- * 5. Env vars necessárias: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
- *
- * O código atual funciona para MVP onde cada navegador = 1 conta.
- */
-function encodePassword(password: string): string {
-  return btoa(encodeURIComponent(password))
-}
-
-function decodePassword(encoded: string): string {
-  try {
-    return decodeURIComponent(atob(encoded))
-  } catch {
-    return encoded // fallback for legacy plaintext passwords
+function mapSupaUser(su: SupaUser): User {
+  const meta = su.user_metadata ?? {}
+  return {
+    id: su.id,
+    name: meta.name || meta.full_name || "",
+    email: su.email || "",
+    whatsapp: meta.whatsapp || "",
+    address: meta.address || "",
+    preferredSize: meta.preferred_size || "",
   }
-}
-
-function safeGetItem<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback
-  try {
-    const item = localStorage.getItem(key)
-    return item ? JSON.parse(item) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-function safeSetItem(key: string, value: unknown): void {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // Storage might be full or blocked
-  }
-}
-
-function generateOrderNumber(): string {
-  const counter = safeGetItem<number>(STORAGE_KEYS.orderCounter, 0) + 1
-  safeSetItem(STORAGE_KEYS.orderCounter, counter)
-  return `FS-${counter.toString().padStart(4, "0")}`
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -115,104 +69,116 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [isHydrated, setIsHydrated] = useState(false)
 
-  // Load from localStorage on mount
+  // ── Initialize: check session ──
   useEffect(() => {
-    setUser(safeGetItem<User | null>(STORAGE_KEYS.user, null))
-    setOrders(safeGetItem<Order[]>(STORAGE_KEYS.orders, []))
-    setIsHydrated(true)
-  }, [])
-
-  // Persist user
-  useEffect(() => {
-    if (!isHydrated) return
-    if (user) {
-      safeSetItem(STORAGE_KEYS.user, user)
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.user)
-    }
-  }, [user, isHydrated])
-
-  // Persist orders
-  useEffect(() => {
-    if (!isHydrated) return
-    safeSetItem(STORAGE_KEYS.orders, orders)
-  }, [orders, isHydrated])
-
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    const users = safeGetItem<(User & { password: string })[]>(STORAGE_KEYS.users, [])
-    const encoded = encodePassword(password)
-    const foundUser = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() &&
-             (u.password === encoded || u.password === password) // support legacy plaintext
-    )
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser
-      setUser(userWithoutPassword)
-      return true
-    }
-    return false
-  }, [])
-
-  const register = useCallback(async (data: {
-    name: string
-    email: string
-    whatsapp: string
-    password: string
-  }): Promise<boolean> => {
-    const users = safeGetItem<(User & { password: string })[]>(STORAGE_KEYS.users, [])
-
-    if (users.some((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
-      return false
+    const sb = getSupabaseBrowser()
+    if (!sb) {
+      setIsHydrated(true)
+      return
     }
 
-    const newUser = {
-      id: Date.now().toString(),
-      name: data.name,
-      email: data.email,
-      whatsapp: data.whatsapp,
-      password: encodePassword(data.password),
-    }
-
-    users.push(newUser)
-    safeSetItem(STORAGE_KEYS.users, users)
-
-    const { password: _, ...userWithoutPassword } = newUser
-    setUser(userWithoutPassword)
-    return true
-  }, [])
-
-  const logout = useCallback(() => {
-    setUser(null)
-  }, [])
-
-  const updateUser = useCallback((data: Partial<User>) => {
-    setUser((prev) => {
-      if (!prev) return null
-      const updated = { ...prev, ...data }
-
-      // Also update in users list
-      const users = safeGetItem<(User & { password: string })[]>(STORAGE_KEYS.users, [])
-      const idx = users.findIndex((u) => u.id === prev.id)
-      if (idx > -1) {
-        users[idx] = { ...users[idx], ...data }
-        safeSetItem(STORAGE_KEYS.users, users)
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(mapSupaUser(session.user))
       }
-
-      return updated
+      setIsHydrated(true)
     })
+
+    // Listen for auth changes (login/logout from other tabs)
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(mapSupaUser(session.user))
+      } else {
+        setUser(null)
+        setOrders([])
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  const addOrder = useCallback((orderData: Omit<Order, "id" | "orderNumber" | "date" | "status">): Order => {
-    const newOrder: Order = {
-      ...orderData,
-      id: Date.now().toString(),
-      orderNumber: generateOrderNumber(),
-      date: new Date().toISOString(),
-      status: "Enviado para atendimento",
+  // ── Fetch orders when user changes ──
+  const refreshOrders = useCallback(async () => {
+    if (!user) { setOrders([]); return }
+    try {
+      const res = await fetch(`/api/customer/orders?email=${encodeURIComponent(user.email)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setOrders(Array.isArray(data) ? data : [])
+      }
+    } catch {
+      console.error("[Auth] Erro ao buscar pedidos")
     }
-    setOrders((current) => [newOrder, ...current])
-    return newOrder
+  }, [user])
+
+  useEffect(() => {
+    if (user) refreshOrders()
+  }, [user, refreshOrders])
+
+  // ── Login ──
+  const login = useCallback(async (email: string, password: string): Promise<{ ok: boolean; error?: string }> => {
+    const sb = getSupabaseBrowser()
+    if (!sb) return { ok: false, error: "Serviço indisponível." }
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password })
+    if (error) return { ok: false, error: error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : error.message }
+    if (data.user) setUser(mapSupaUser(data.user))
+    return { ok: true }
   }, [])
+
+  // ── Register ──
+  const register = useCallback(async (input: {
+    name: string; email: string; whatsapp: string; password: string
+  }): Promise<{ ok: boolean; error?: string }> => {
+    const sb = getSupabaseBrowser()
+    if (!sb) return { ok: false, error: "Serviço indisponível." }
+
+    const { data, error } = await sb.auth.signUp({
+      email: input.email,
+      password: input.password,
+      options: {
+        data: {
+          name: input.name,
+          full_name: input.name,
+          whatsapp: input.whatsapp,
+        },
+      },
+    })
+    if (error) {
+      if (error.message.includes("already registered")) return { ok: false, error: "Este e-mail já está em uso." }
+      return { ok: false, error: error.message }
+    }
+    if (data.user) setUser(mapSupaUser(data.user))
+    return { ok: true }
+  }, [])
+
+  // ── Logout ──
+  const logout = useCallback(async () => {
+    const sb = getSupabaseBrowser()
+    if (sb) await sb.auth.signOut()
+    setUser(null)
+    setOrders([])
+  }, [])
+
+  // ── Update user metadata ──
+  const updateUser = useCallback((data: Partial<User>) => {
+    const sb = getSupabaseBrowser()
+    if (sb && user) {
+      sb.auth.updateUser({
+        data: {
+          name: data.name,
+          full_name: data.name,
+          whatsapp: data.whatsapp,
+          address: data.address,
+          preferred_size: data.preferredSize,
+        },
+      }).then(({ data: updated }) => {
+        if (updated.user) setUser(mapSupaUser(updated.user))
+      })
+    }
+    // Also update local state immediately
+    setUser(prev => prev ? { ...prev, ...data } : null)
+  }, [user])
 
   return (
     <AuthContext.Provider
@@ -225,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         updateUser,
-        addOrder,
+        refreshOrders,
       }}
     >
       {children}

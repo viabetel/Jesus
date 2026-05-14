@@ -53,7 +53,7 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
   }, [structuredMedia, selectedColor, product.images])
 
   const { addItem, isInCart } = useCart()
-  const { toggleFavorite, isFavorite } = useFavorites()
+  const { toggleFavorite, isFavorite, requiresLogin } = useFavorites()
 
   const availableSizes = useMemo(() => selectedColor ? getAvailableSizesForColor(product, selectedColor.name) : allSizes, [product, selectedColor, allSizes])
   const currentStock = useMemo(() => selectedColor && selectedSize ? getVariantStock(product, selectedColor.name, selectedSize) : 0, [product, selectedColor, selectedSize])
@@ -158,7 +158,7 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
               <button onClick={handleAdd} disabled={!canAdd} className="flex-1 h-14 bg-ink text-white caps text-[12px] hover:bg-fg-soft transition disabled:opacity-45 disabled:cursor-not-allowed">
                 {inCart ? "Atualizar Sacola" : "Adicionar à Sacola"}
               </button>
-              <button onClick={() => toggleFavorite(product)} className="h-14 w-14 border border-border grid place-items-center hover:border-ink transition" aria-label="Favoritar">
+              <button onClick={() => { if (requiresLogin) { toast("Faça login para favoritar", { action: { label: "Entrar", onClick: () => window.location.href = "/login" } }); return }; toggleFavorite(product) }} className="h-14 w-14 border border-border grid place-items-center hover:border-ink transition" aria-label="Favoritar">
                 <Icon name={isFav ? "heart-fill" : "heart"} size={16} color={isFav ? "#B91C1C" : "currentColor"}/>
               </button>
             </div>

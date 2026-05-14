@@ -55,13 +55,13 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true)
-    const success = await register({ name, email, whatsapp, password })
+    const result = await register({ name, email, whatsapp, password })
 
-    if (success) {
+    if (result.ok) {
       toast.success("Conta criada com sucesso!")
       router.push("/minha-conta")
     } else {
-      toast.error("Este e-mail já está em uso")
+      toast.error(result.error || "Erro ao criar conta")
     }
     setIsLoading(false)
   }

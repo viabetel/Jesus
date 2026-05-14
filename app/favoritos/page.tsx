@@ -8,7 +8,7 @@ import { ProductCard } from "@/components/product-card"
 import { useFavorites } from "@/contexts/favorites-context"
 
 export default function FavoritesPage() {
-  const { favorites } = useFavorites()
+  const { favorites, requiresLogin } = useFavorites()
 
   return (
     <>
@@ -27,7 +27,23 @@ export default function FavoritesPage() {
             </div>
           </div>
 
-          {favorites.length === 0 ? (
+          {requiresLogin ? (
+            <div className="mt-20 text-center sm:mt-24">
+              <div className="inline-grid h-14 w-14 place-items-center bg-[var(--cream)] rounded-full mx-auto sm:h-16 sm:w-16">
+                <Icon name="heart" size={22}/>
+              </div>
+              <p className="mt-5 font-serif italic font-bold text-[22px] sm:mt-6 sm:text-[28px]">Faça login para ver seus favoritos</p>
+              <p className="mt-2 text-[13px] text-[var(--muted-foreground)] max-w-md mx-auto sm:text-[14px]">
+                Crie sua conta ou entre para salvar peças favoritas e acessá-las em qualquer dispositivo.
+              </p>
+              <Link
+                href="/login"
+                className="mt-6 inline-flex items-center gap-3 bg-[var(--ink)] text-white caps text-[10px] px-6 h-11 hover:bg-[var(--fg-soft)] transition sm:mt-8 sm:text-[11px] sm:px-7 sm:h-12"
+              >
+                Entrar na conta <Icon name="arrow-right" size={13}/>
+              </Link>
+            </div>
+          ) : favorites.length === 0 ? (
             <div className="mt-20 text-center sm:mt-24">
               <div className="inline-grid h-14 w-14 place-items-center bg-[var(--cream)] rounded-full mx-auto sm:h-16 sm:w-16">
                 <Icon name="heart" size={22}/>

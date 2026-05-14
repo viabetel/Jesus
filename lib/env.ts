@@ -1,5 +1,8 @@
 /**
- * Helpers de ambiente. Separam lógica de "modo dev vs produção" num único lugar.
+ * Helpers de ambiente.
+ *
+ * canUseMemoryFallback agora é DESATIVADO por padrão.
+ * Para ativar em dev local sem Supabase: ALLOW_LOCAL_FALLBACK=true
  */
 
 export function isProduction(): boolean {
@@ -7,19 +10,16 @@ export function isProduction(): boolean {
 }
 
 /**
- * Fallback in-memory SÓ pode ser usado em:
- *  - NODE_ENV=development (local)
- *  - Durante `next build` (que roda em production mas precisa de static params)
- *
- * Em runtime de produção (request real), Supabase DEVE estar configurado.
+ * Fallback in-memory SÓ permitido quando explicitamente ativado.
+ * Em produção, NUNCA permitir — dados devem vir do Supabase.
  */
 export function canUseMemoryFallback(): boolean {
-  if (!isProduction()) return true
-  // next build seta NEXT_PHASE ou __NEXT_PRIVATE_PREBUNDLED_REACT
-  // Mas a forma mais segura: se não tem Supabase E estamos em build,
-  // o caller já protege gerando static params do array legado.
-  // Então: permitir se NEXT_PHASE existir (build time)
+  // Build time (next build) precisa de fallback para generateStaticParams
   const phase = process.env.NEXT_PHASE ?? ""
   if (phase.includes("build") || phase.includes("generate")) return true
+
+  // Explicitamente ativado para dev
+  if (process.env.ALLOW_LOCAL_FALLBACK === "true") return true
+
   return false
 }

@@ -19,7 +19,7 @@ interface CardProduct extends Product {
 
 export function ProductCard({ product }: { product: CardProduct }) {
   const [hovered, setHovered] = useState(false)
-  const { toggleFavorite, isFavorite } = useFavorites()
+  const { toggleFavorite, isFavorite, requiresLogin } = useFavorites()
 
   const isFav = isFavorite(product.id)
   const totalStock = getTotalStock(product)
@@ -42,6 +42,10 @@ export function ProductCard({ product }: { product: CardProduct }) {
 
   const handleFav = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
+    if (requiresLogin) {
+      toast("Faça login para favoritar", { action: { label: "Entrar", onClick: () => window.location.href = "/login" } })
+      return
+    }
     toggleFavorite(product)
     if (!isFav) toast.success("Favoritado!")
   }

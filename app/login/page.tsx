@@ -24,13 +24,13 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
 
-    const success = await login(email, password)
+    const result = await login(email, password)
 
-    if (success) {
+    if (result.ok) {
       toast.success("Login realizado com sucesso!")
       router.push("/minha-conta")
     } else {
-      toast.error("E-mail ou senha incorretos")
+      toast.error(result.error || "E-mail ou senha incorretos")
     }
     setIsLoading(false)
   }

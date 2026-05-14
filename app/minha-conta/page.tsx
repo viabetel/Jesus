@@ -86,11 +86,13 @@ export default function AccountPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Entregue": return "bg-emerald-100 text-emerald-800"
-      case "Confirmado": return "bg-blue-100 text-blue-800"
-      case "Cancelado": return "bg-red-100 text-red-800"
-      case "Em confirmação": return "bg-amber-100 text-amber-800"
+    switch (status.toLowerCase()) {
+      case "entregue": return "bg-emerald-100 text-emerald-800"
+      case "confirmado": return "bg-blue-100 text-blue-800"
+      case "cancelado": return "bg-red-100 text-red-800"
+      case "enviado": return "bg-purple-100 text-purple-800"
+      case "recebido": return "bg-amber-100 text-amber-800"
+      case "em confirmação": return "bg-amber-100 text-amber-800"
       default: return "bg-gray-100 text-gray-800"
     }
   }

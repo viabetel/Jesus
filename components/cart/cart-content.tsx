@@ -5,7 +5,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { Icon } from "@/components/fashion/Icon"
 import { useCart } from "@/contexts/cart-context"
-import { useAuth } from "@/contexts/auth-context"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
 import { formatPrice } from "@/lib/format"
 import { formatPhone } from "@/lib/phone"
@@ -22,7 +21,6 @@ function buildWhatsAppMessage(order: OrderResult, validItems: ReturnType<typeof 
 
 export function CartContent() {
   const { items, refs, loading, removeItem, updateQuantity, getSubtotal, clearCart, revalidate } = useCart()
-  const { addOrder, isAuthenticated } = useAuth()
   const [step, setStep] = useState<"cart" | "checkout" | "confirmed">("cart")
   const [name, setName] = useState("")
   const [whatsNum, setWhatsNum] = useState("")
@@ -116,23 +114,6 @@ export function CartContent() {
       }
       setOrder(data.order)
       setStep("confirmed")
-      
-      // Track order in auth context so "Minha Conta" can display it
-      try {
-        addOrder({
-          items: refs.map(r => ({
-            productName: r.product.name,
-            size: r.variantLabel?.split("/")[1]?.trim() || "",
-            color: r.variantLabel?.split("/")[0]?.trim() || "",
-            quantity: r.quantity,
-            price: r.product.price,
-          })),
-          total: getSubtotal(),
-          address: undefined,
-          observation: observation.trim() || undefined,
-        })
-      } catch { /* non-critical */ }
-      
       clearCart()
     } catch {
       setError("Erro de conexão. Tente novamente.")

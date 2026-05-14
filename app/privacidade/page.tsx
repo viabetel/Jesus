@@ -66,9 +66,11 @@ export default function PrivacyPage() {
                 Armazenamento
               </h2>
               <p className="mt-4 text-muted-foreground">
-                Os dados são armazenados localmente no seu navegador
-                (localStorage) para facilitar sua experiência de compra. Não
-                compartilhamos seus dados com terceiros.
+                Os dados de conta, pedidos e favoritos são armazenados de
+                forma segura em nosso banco de dados para garantir acesso em
+                qualquer dispositivo. A sacola de compras pode usar armazenamento
+                temporário no navegador enquanto você navega. Não compartilhamos
+                seus dados com terceiros.
               </p>
 
               <h2 className="mt-8 font-serif text-xl font-semibold">
