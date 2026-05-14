@@ -127,19 +127,19 @@ export async function POST(request: Request) {
     }
 
     // Estoque disponível (considerando reservas)
-    let availableStock = 0
-    let stockValidationFailed = false
+    let availableStock = variant.stock
+    let stockEstimated = false
     try {
       availableStock = await getVariantAvailableStock(item.productId, item.variantSku)
     } catch (stockErr) {
+      // Falha na consulta real — usar estoque bruto como estimativa, não bloquear
       console.error(`[CartValidate] Falha ao validar estoque real para ${item.variantSku}:`, stockErr)
-      stockValidationFailed = true
-      availableStock = 0
+      availableStock = variant.stock
+      stockEstimated = true
     }
 
-    if (stockValidationFailed) {
-      warnings.push("Não foi possível validar o estoque deste item. Tente novamente em instantes.")
-      shouldRemove = true
+    if (stockEstimated && availableStock > 0) {
+      warnings.push("Estoque aproximado — a confirmação final será feita no fechamento.")
     }
 
     const maxQuantity = shouldRemove ? 0 : availableStock

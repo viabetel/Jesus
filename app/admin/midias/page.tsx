@@ -28,29 +28,25 @@ export default function AdminMidiasPage() {
   const [search, setSearch] = useState(""); const [page, setPage] = useState(1); const [expanded, setExpanded] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/admin/products").then(r => r.json()),
-      fetch("/api/admin/products").then(async (r) => {
-        // Fetch all media in a separate call
-        const prods = await r.json()
-        const ids = Array.isArray(prods) ? prods.map((p: any) => p.id) : []
-        if (ids.length === 0) return {}
-        // Fetch media for all products via individual calls (batch)
+    fetch("/api/admin/products").then(r => r.json()).then(async (prods) => {
+      const prodsArr = Array.isArray(prods) ? prods : []
+      const ids = prodsArr.map((p: any) => p.id)
+      
+      // Fetch media for all products
+      let mediaMap: Record<string, MediaItem[]> = {}
+      if (ids.length > 0) {
         const mediaRes = await Promise.all(
           ids.map((id: string) =>
             fetch(`/api/admin/products/${id}/media`).then(r => r.ok ? r.json() : []).catch(() => [])
           )
         )
-        const map: Record<string, MediaItem[]> = {}
-        ids.forEach((id: string, i: number) => { map[id] = Array.isArray(mediaRes[i]) ? mediaRes[i] : [] })
-        return map
-      })
-    ]).then(([prods, mediaMap]) => {
-      const prodsArr = Array.isArray(prods) ? prods : []
+        ids.forEach((id: string, i: number) => { mediaMap[id] = Array.isArray(mediaRes[i]) ? mediaRes[i] : [] })
+      }
+
       const enriched: ProductWithMedia[] = prodsArr.map((p: any) => ({
         id: p.id, name: p.name, slug: p.slug, images: p.images || [],
         coverImage: p.coverImage || null,
-        media: (mediaMap as any)[p.id] || [],
+        media: mediaMap[p.id] || [],
       }))
       setProducts(enriched)
       setLoading(false)

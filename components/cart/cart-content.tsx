@@ -29,6 +29,8 @@ export function CartContent() {
   const [whatsNum, setWhatsNum] = useState("")
   const [email, setEmail] = useState("")
   const [observation, setObs] = useState("")
+  const [deliveryMode, setDeliveryMode] = useState<"whatsapp" | "entrega" | "retirada">("whatsapp")
+  const [address, setAddress] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [order, setOrder] = useState<OrderResult | null>(null)
@@ -78,7 +80,7 @@ export function CartContent() {
             Voltar ao catálogo
           </a>
           {isAuthenticated && (
-            <a href="/minha-conta" className="h-14 px-8 border border-[var(--border)] caps text-[12px] text-[var(--ink)] inline-flex items-center justify-center gap-2 hover:bg-[var(--cream)] transition">
+            <a href="/minha-conta?tab=pedidos" className="h-14 px-8 border border-[var(--border)] caps text-[12px] text-[var(--ink)] inline-flex items-center justify-center gap-2 hover:bg-[var(--cream)] transition">
               Ver meus pedidos
             </a>
           )}
@@ -108,6 +110,7 @@ export function CartContent() {
     if (!name.trim()) { setError("Informe seu nome."); return }
     if (!whatsNum.trim()) { setError("Informe seu WhatsApp."); return }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Informe um e-mail válido."); return }
+    if (deliveryMode === "entrega" && !address.trim()) { setError("Informe o endereço de entrega."); return }
 
     setSubmitting(true)
     try {
@@ -132,6 +135,7 @@ export function CartContent() {
           customerWhatsapp: whatsNum.trim(),
           customerEmail: email.trim(),
           items: refs.map(r => ({ productId: r.productId, variantSku: r.variantSku, quantity: r.quantity })),
+          address: deliveryMode === "entrega" ? address.trim() : deliveryMode === "retirada" ? "Retirada" : undefined,
           observation: observation.trim() || undefined,
         }),
       })
@@ -158,9 +162,34 @@ export function CartContent() {
         </button>
 
         <h2 className="font-serif italic font-bold text-[28px] leading-none sm:text-[36px]">Dados do pedido</h2>
-        <p className="mt-3 text-[13px] text-muted-fg sm:text-[14px]">Preencha seus dados para enviar o pedido. Combinaremos pagamento e entrega pelo WhatsApp.</p>
+        <p className="mt-3 text-[13px] text-muted-fg sm:text-[14px]">Revise seus itens e preencha seus dados.</p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        {/* Item review */}
+        <div className="mt-6 rounded-xl border border-[var(--border)] overflow-hidden">
+          <div className="px-4 py-2.5 bg-[var(--cream)] border-b border-[var(--border)]">
+            <p className="caps text-[10px] font-semibold text-muted-fg">{validItems.length} {validItems.length === 1 ? "item" : "itens"} na sacola</p>
+          </div>
+          <div className="divide-y divide-[var(--border)]">
+            {validItems.map(({ ref, product, variant }) => product && (
+              <div key={ref.variantSku} className="flex gap-3 p-3">
+                <div className="relative h-14 w-10 bg-[var(--stone)] overflow-hidden rounded shrink-0">
+                  <Image src={product.image && product.image.length > 1 ? product.image : "/brand/placeholder-product.svg"} alt="" fill className="object-cover" sizes="40px" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-medium truncate">{product.name}</p>
+                  <p className="text-[10px] text-muted-fg">{variant?.colorName} · {variant?.size} · Qtd: {ref.quantity}</p>
+                </div>
+                <p className="text-[12px] font-bold shrink-0">{formatPrice(product.price * ref.quantity)}</p>
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-2.5 border-t border-[var(--border)] flex justify-between items-center">
+            <span className="text-[11px] font-semibold text-muted-fg">Total</span>
+            <span className="text-[16px] font-bold">{formatPrice(subtotal)}</span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           <div>
             <label className="caps text-[10px] text-muted-fg block mb-2">Nome completo *</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome"
@@ -176,6 +205,29 @@ export function CartContent() {
             <input type="email" value={email} onChange={e => { if (!isAuthenticated) setEmail(e.target.value) }} readOnly={isAuthenticated} placeholder="seu@email.com"
               className={`w-full h-12 px-4 border border-[var(--border)] bg-transparent text-[14px] outline-none focus:border-[var(--ink)] transition ${isAuthenticated ? "opacity-60 cursor-not-allowed" : ""}`} />
           </div>
+          {/* Delivery */}
+          <div>
+            <label className="caps text-[10px] text-muted-fg block mb-2">Forma de entrega *</label>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {([["whatsapp", "Combinar pelo WhatsApp"], ["entrega", "Entrega"], ["retirada", "Retirada"]] as const).map(([val, label]) => (
+                <button key={val} type="button" onClick={() => setDeliveryMode(val)}
+                  className={`h-11 px-4 rounded-lg border text-[12px] font-medium transition ${
+                    deliveryMode === val ? "border-[var(--ink)] bg-[var(--ink)] text-white" : "border-[var(--border)] hover:border-[var(--ink)]"
+                  }`}>{label}</button>
+              ))}
+            </div>
+            {deliveryMode === "entrega" && (
+              <div className="mt-3">
+                <label className="caps text-[10px] text-muted-fg block mb-2">Endereço de entrega *</label>
+                <input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro, cidade"
+                  className="w-full h-12 px-4 border border-[var(--border)] bg-transparent text-[14px] outline-none focus:border-[var(--ink)] transition" />
+              </div>
+            )}
+            {deliveryMode === "retirada" && (
+              <p className="mt-2 text-[11px] text-muted-fg">A retirada será combinada no atendimento pelo WhatsApp.</p>
+            )}
+          </div>
+
           <div>
             <label className="caps text-[10px] text-muted-fg block mb-2">Observação (opcional)</label>
             <textarea value={observation} onChange={e => setObs(e.target.value)} placeholder="Alguma preferência de entrega, presente, etc."

@@ -13,10 +13,25 @@ export type User = {
   preferredSize?: string
 }
 
+export type OrderItem = {
+  productId?: string
+  productName: string
+  productSlug?: string
+  productImage?: string
+  sku?: string
+  size: string
+  color: string
+  quantity: number
+  price: number
+  lineTotal?: number
+}
+
 export type Order = {
-  id: string; orderNumber: string; date: string
-  items: { productName: string; size: string; color: string; quantity: number; price: number }[]
-  total: number; status: string; observation?: string
+  id: string; orderNumber: string; date: string; updatedAt?: string
+  status: string; customerName?: string; customerWhatsapp?: string
+  customerEmail?: string; address?: string; observation?: string
+  items: OrderItem[]
+  subtotal?: number; total: number
 }
 
 export type AuthResult =
@@ -34,6 +49,8 @@ type AuthContextType = {
   logout: () => Promise<void>
   updateUser: (data: Partial<User>) => Promise<{ ok: boolean; error?: string }>
   refreshOrders: () => Promise<void>
+  ordersLoading: boolean
+  ordersError: string | null
   getAccessToken: () => Promise<string | null>
 }
 
@@ -51,6 +68,8 @@ function mapSupaUser(su: SupaUser): User {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [ordersError, setOrdersError] = useState<string | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
@@ -78,18 +97,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const refreshOrders = useCallback(async () => {
-    if (!user) { setOrders([]); return }
+    if (!user) { setOrders([]); setOrdersLoading(false); setOrdersError(null); return }
     const token = await getAccessToken()
-    if (!token) return
+    if (!token) { setOrdersError("Sessão expirada."); return }
+    setOrdersLoading(true); setOrdersError(null)
     try {
       const res = await fetch("/api/customer/orders", {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (res.ok) {
-        const data = await res.json()
-        setOrders(Array.isArray(data) ? data : [])
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setOrdersError(body.error || "Erro ao carregar pedidos.")
+        return
       }
-    } catch { console.error("[Auth] Erro ao buscar pedidos") }
+      const data = await res.json()
+      setOrders(Array.isArray(data) ? data : [])
+    } catch {
+      setOrdersError("Não foi possível carregar seus pedidos.")
+    } finally { setOrdersLoading(false) }
   }, [user, getAccessToken])
 
   useEffect(() => { if (user) refreshOrders() }, [user, refreshOrders])
@@ -160,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, orders, isAuthenticated: !!user, isHydrated,
-      login, register, logout, updateUser, refreshOrders, getAccessToken,
+      login, register, logout, updateUser, refreshOrders, ordersLoading, ordersError, getAccessToken,
     }}>
       {children}
     </AuthContext.Provider>

@@ -59,6 +59,11 @@ export async function POST(request: Request) {
   // If logged in, use session email (not form email)
   const customerEmail = authUser?.email || customerEmailFromBody
 
+  // Validate email format for visitors
+  if (!authUser && customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+    return NextResponse.json({ error: "E-mail inválido." }, { status: 400 })
+  }
+
   if (!customerName) {
     return NextResponse.json({ error: "Nome é obrigatório." }, { status: 400 })
   }

@@ -23,6 +23,8 @@ export type OrderStatus = "recebido" | "confirmado" | "enviado" | "entregue" | "
 export interface OrderItem {
   productId: string
   productName: string
+  productSlug: string
+  productImage: string    // snapshot da capa no momento do pedido
   sku: string             // SKU da variante
   size: string
   color: string
@@ -249,6 +251,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     resolvedItems.push({
       productId: product.id,
       productName: product.name,
+      productSlug: product.slug,
+      productImage: product.images.find(img => !!img) || "",
       sku: variant.sku,
       size: variant.size,
       color: variant.colorName,

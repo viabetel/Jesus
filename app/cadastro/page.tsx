@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/auth-context"
+import { AuthLoadingScreen } from "@/components/auth/auth-loading-screen"
 import { formatPhone } from "@/lib/phone"
 
 export default function CadastroPage() {
-  const { register, isAuthenticated } = useAuth()
+  const { register, isAuthenticated, isHydrated } = useAuth()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [whatsapp, setWhatsapp] = useState("")
@@ -17,10 +18,17 @@ export default function CadastroPage() {
   const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
 
-  if (isAuthenticated && typeof window !== "undefined") {
-    window.location.replace("/minha-conta")
-    return null
+  useEffect(() => {
+    if (isHydrated && isAuthenticated) {
+      setRedirecting(true)
+      window.location.replace("/minha-conta")
+    }
+  }, [isHydrated, isAuthenticated])
+
+  if (!isHydrated || redirecting) {
+    return <AuthLoadingScreen message="Carregando..." />
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
