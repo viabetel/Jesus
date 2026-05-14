@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 // Hard navigation for public pages
-const Link = "a" as unknown as typeof import("next/link").default
 import Image from "next/image"
 import { Heart, Play, MessageCircle } from "lucide-react"
 import { useFavorites } from "@/contexts/favorites-context"

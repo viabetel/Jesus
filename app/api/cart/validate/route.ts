@@ -127,13 +127,19 @@ export async function POST(request: Request) {
     }
 
     // Estoque disponível (considerando reservas)
-    let availableStock = variant.stock
-    let stockWarning: string | undefined
+    let availableStock = 0
+    let stockValidationFailed = false
     try {
       availableStock = await getVariantAvailableStock(item.productId, item.variantSku)
     } catch (stockErr) {
       console.error(`[CartValidate] Falha ao validar estoque real para ${item.variantSku}:`, stockErr)
-      stockWarning = "Estoque pode estar desatualizado. O valor mostrado é aproximado."
+      stockValidationFailed = true
+      availableStock = 0
+    }
+
+    if (stockValidationFailed) {
+      warnings.push("Não foi possível validar o estoque deste item. Tente novamente em instantes.")
+      shouldRemove = true
     }
 
     const maxQuantity = shouldRemove ? 0 : availableStock
@@ -151,7 +157,6 @@ export async function POST(request: Request) {
       const dir = product.price > item.lastSeenPrice ? "subiu" : "baixou"
       warnings.push(`Preço ${dir}: era R$ ${item.lastSeenPrice.toFixed(2)}, agora R$ ${product.price.toFixed(2)}.`)
     }
-    if (stockWarning) warnings.push(stockWarning)
 
     // Resolve cover image via product_media (with color support)
     const variantColorKey = variant

@@ -1,9 +1,8 @@
 /**
  * Products Repository — Supabase como fonte obrigatória.
  *
- * Em produção, Supabase é OBRIGATÓRIO. Sem ele, lança erro.
- * Em dev, fallback local só com ALLOW_LOCAL_FALLBACK=true.
- * Em build time, fallback permitido para generateStaticParams.
+ * Supabase é OBRIGATÓRIO. Sem ele, lança erro.
+ * Fallback local só com ALLOW_LOCAL_FALLBACK=true.
  */
 
 import {
