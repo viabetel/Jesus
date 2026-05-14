@@ -118,15 +118,20 @@ export async function PATCH(request: Request) {
     const updated = await updateOrderStatus(orderId, status)
     if (!updated) return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 })
     
-    // Fire-and-forget email notification
+    // Email notification with proper logging
     if (updated.customerEmail) {
-      sendOrderStatusUpdate({
-        customerName: updated.customerName,
-        customerEmail: updated.customerEmail,
-        orderNumber: updated.number,
-        newStatus: status,
-        statusMessage: orderStatusLabel[status] || status,
-      }).catch(() => {})
+      try {
+        const sent = await sendOrderStatusUpdate({
+          customerName: updated.customerName,
+          customerEmail: updated.customerEmail,
+          orderNumber: updated.number,
+          newStatus: status,
+          statusMessage: orderStatusLabel[status] || status,
+        })
+        if (!sent) console.warn(`[Orders] Email de status NÃO enviado para ${updated.number}`)
+      } catch (emailErr) {
+        console.error(`[Orders] Erro ao enviar email de status para ${updated.number}:`, emailErr)
+      }
     }
 
     return NextResponse.json(updated)

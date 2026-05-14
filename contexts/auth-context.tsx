@@ -55,8 +55,23 @@ const STORAGE_KEYS = {
 } as const
 
 /**
- * Basic password encoding — NOT cryptographic.
- * For MVP only. Replace with Supabase Auth / bcrypt for production.
+ * Auth Context — MVP / Local Storage
+ *
+ * ⚠️ LIMITAÇÕES ATUAIS:
+ * - Dados salvos APENAS no localStorage do navegador
+ * - Conta só existe no navegador/dispositivo onde foi criada
+ * - Pedidos do checkout são salvos aqui E no servidor (Supabase)
+ * - Favoritos só existem no localStorage
+ *
+ * 🚀 MIGRAÇÃO PARA PRODUÇÃO:
+ * Para login real por usuário em qualquer dispositivo:
+ * 1. Habilitar Supabase Auth (email/senha)
+ * 2. Migrar tabela `users` para Supabase
+ * 3. Vincular `orders` ao user_id do Supabase Auth
+ * 4. Migrar `favorites` para tabela no Supabase
+ * 5. Env vars necessárias: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+ *
+ * O código atual funciona para MVP onde cada navegador = 1 conta.
  */
 function encodePassword(password: string): string {
   return btoa(encodeURIComponent(password))

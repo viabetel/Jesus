@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: msg }, { status: 400 })
     }
 
-    // Fire-and-forget email notifications (don't block response)
+    // Send email notifications (non-blocking but logged)
     const order = result.order
     const emailData = {
       customerName: order.customerName,
@@ -91,13 +91,28 @@ export async function POST(request: Request) {
         `Olá! Fiz o pedido ${order.number} pelo site e quero combinar pagamento/entrega.`
       ),
     }
-    sendOrderConfirmation(emailData).catch(() => {})
-    sendAdminOrderNotification({
-      orderNumber: order.number,
-      customerName: order.customerName,
-      total: order.total,
-      itemCount: order.items.length,
-    }).catch(() => {})
+    
+    let emailSent = false
+    let adminEmailSent = false
+    
+    try {
+      emailSent = await sendOrderConfirmation(emailData)
+      if (!emailSent) console.warn(`[Orders] Email de confirmação NÃO enviado para pedido ${order.number}`)
+    } catch (emailErr) {
+      console.error(`[Orders] Erro ao enviar email de confirmação para ${order.number}:`, emailErr)
+    }
+    
+    try {
+      adminEmailSent = await sendAdminOrderNotification({
+        orderNumber: order.number,
+        customerName: order.customerName,
+        total: order.total,
+        itemCount: order.items.length,
+      })
+      if (!adminEmailSent) console.warn(`[Orders] Notificação admin NÃO enviada para pedido ${order.number}`)
+    } catch (adminErr) {
+      console.error(`[Orders] Erro ao enviar notificação admin para ${order.number}:`, adminErr)
+    }
 
     return NextResponse.json({
       success: true,
@@ -107,6 +122,8 @@ export async function POST(request: Request) {
         total: result.order.total,
         status: result.order.status,
       },
+      emailSent,
+      adminEmailSent,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao criar pedido."

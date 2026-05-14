@@ -4,6 +4,7 @@ import { CartProvider } from "@/contexts/cart-context"
 import { FavoritesProvider } from "@/contexts/favorites-context"
 import { AuthProvider } from "@/contexts/auth-context"
 import { WhatsAppButton } from "@/components/whatsapp-button"
+import { RouteChangeHandler } from "@/components/route-change-handler"
 import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CartProvider>
             <FavoritesProvider>
               {children}
+              <RouteChangeHandler />
               <WhatsAppButton />
               <Toaster position="top-center" />
             </FavoritesProvider>

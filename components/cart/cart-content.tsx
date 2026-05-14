@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Icon } from "@/components/fashion/Icon"
 import { useCart } from "@/contexts/cart-context"
+import { useAuth } from "@/contexts/auth-context"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
 import { formatPrice } from "@/lib/format"
 import { formatPhone } from "@/lib/phone"
@@ -21,6 +22,7 @@ function buildWhatsAppMessage(order: OrderResult, validItems: ReturnType<typeof 
 
 export function CartContent() {
   const { items, refs, loading, removeItem, updateQuantity, getSubtotal, clearCart, revalidate } = useCart()
+  const { addOrder, isAuthenticated } = useAuth()
   const [step, setStep] = useState<"cart" | "checkout" | "confirmed">("cart")
   const [name, setName] = useState("")
   const [whatsNum, setWhatsNum] = useState("")
@@ -114,6 +116,23 @@ export function CartContent() {
       }
       setOrder(data.order)
       setStep("confirmed")
+      
+      // Track order in auth context so "Minha Conta" can display it
+      try {
+        addOrder({
+          items: refs.map(r => ({
+            productName: r.product.name,
+            size: r.variantLabel?.split("/")[1]?.trim() || "",
+            color: r.variantLabel?.split("/")[0]?.trim() || "",
+            quantity: r.quantity,
+            price: r.product.price,
+          })),
+          total: getSubtotal(),
+          address: undefined,
+          observation: observation.trim() || undefined,
+        })
+      } catch { /* non-critical */ }
+      
       clearCart()
     } catch {
       setError("Erro de conexão. Tente novamente.")
@@ -195,7 +214,7 @@ export function CartContent() {
             const lineTotal = product.price * item.ref.quantity
             const maxQ = item.maxQuantity
             return (
-              <div key={`${item.ref.productId}-${item.ref.variantSku}`} className="py-6 grid gap-4 md:grid-cols-[1fr_120px_120px_120px_40px] md:items-center">
+              <div key={`${item.ref.productId}-${item.ref.variantSku}`} className="py-6 grid gap-4 md:grid-cols-[1fr_120px_120px_120px_40px] md:items-center min-w-0">
                 <div className="flex gap-4">
                   <Link href={`/produto/${product.slug}`} className="relative h-28 w-20 bg-[var(--stone)] overflow-hidden shrink-0 sm:h-32 sm:w-24">
                     <Image src={product.image && product.image.length > 1 ? product.image : "/brand/placeholder-product.svg"} alt={product.name} fill className="object-cover" sizes="96px" />

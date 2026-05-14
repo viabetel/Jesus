@@ -13,11 +13,23 @@ import { Resend } from "resend"
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
-  if (!key) return null
+  if (!key) {
+    console.warn("[Email] RESEND_API_KEY não configurada. Emails desativados.")
+    return null
+  }
+  if (key === "re_test" || key.startsWith("re_test_")) {
+    console.info("[Email] Usando chave de teste Resend. Emails só serão entregues para o domínio verificado ou onboarding@resend.dev.")
+  }
   return new Resend(key)
 }
 
-const FROM = () => process.env.RESEND_FROM || "Fashion Store <onboarding@resend.dev>"
+const FROM = () => {
+  const from = process.env.RESEND_FROM || "Fashion Store <onboarding@resend.dev>"
+  if (from.includes("onboarding@resend.dev")) {
+    console.info("[Email] Usando onboarding@resend.dev como remetente. Para produção, configure um domínio verificado no Resend e atualize RESEND_FROM.")
+  }
+  return from
+}
 const STORE = () => process.env.STORE_NAME || "Fashion Store"
 
 // ═══ Templates ═══

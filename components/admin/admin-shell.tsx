@@ -70,7 +70,7 @@ export function AdminShell({ children, title, breadcrumb }: {
       </aside>
 
       {/* ─── Main content ─── */}
-      <div className="flex-1 lg:ml-56">
+      <div className="flex-1 lg:ml-56 min-w-0 overflow-x-hidden">
         {/* Mobile topbar */}
         <header className="lg:hidden border-b border-neutral-800 bg-neutral-950 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 h-12">

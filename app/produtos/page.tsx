@@ -20,7 +20,7 @@ export default async function ProductsPage() {
       <div className="fixed inset-x-0 top-0 z-40 bg-white border-b border-[var(--border)]">
         <FashionHeader />
       </div>
-      <main className="min-h-dvh pt-32">
+      <main className="min-h-dvh pt-32 overflow-x-hidden">
         <div className="mx-auto max-w-[1600px] px-6 py-6 sm:px-10 lg:py-10">
           <div className="text-[11px] caps tracking-[0.22em] text-[var(--muted-foreground)]">Fashion Store / Catálogo</div>
           <h1 className="mt-4 font-serif italic font-bold text-[32px] leading-none sm:text-[42px] lg:text-[52px]">Moda Cristã Multisex</h1>

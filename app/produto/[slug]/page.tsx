@@ -55,7 +55,7 @@ export default async function ProductPage({ params }: Props) {
       <div className="fixed inset-x-0 top-0 z-40 bg-white border-b border-[var(--border)]">
         <FashionHeader />
       </div>
-      <main className="min-h-dvh pt-32 pb-20 sm:pb-6 lg:pt-36">
+      <main className="min-h-dvh pt-32 pb-20 sm:pb-6 lg:pt-36 overflow-x-hidden">
         <div className="mx-auto max-w-[1600px] px-6 sm:px-10">
           <ProductDetails product={product} structuredMedia={mediaData} />
           <RelatedProducts currentProduct={product} allProducts={allProducts} />

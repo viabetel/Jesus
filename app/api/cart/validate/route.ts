@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getProductById } from "@/lib/services/products-repo"
 import { getVariantAvailableStock } from "@/lib/services/orders"
+import { resolveProductCover } from "@/lib/services/cover-resolver"
 
 /**
  * POST /api/cart/validate — PÚBLICO (usado pela sacola do cliente)
@@ -95,6 +96,9 @@ export async function POST(request: Request) {
     // Busca variante
     const variant = product.variants.find(v => v.sku === item.variantSku)
     if (!variant) {
+      // Resolve cover image properly via product_media
+      const variantNotFoundCover = await resolveProductCover(item.productId, product.images)
+      
       results.push({
         productId: item.productId,
         variantSku: item.variantSku,
@@ -104,7 +108,7 @@ export async function POST(request: Request) {
           slug: product.slug,
           price: product.price,
           originalPrice: product.originalPrice,
-          image: product.images[0] ?? "/brand/placeholder-product.svg",
+          image: variantNotFoundCover.url,
           status: product.status,
         },
         variant: null,
@@ -146,6 +150,12 @@ export async function POST(request: Request) {
       warnings.push(`Preço ${dir}: era R$ ${item.lastSeenPrice.toFixed(2)}, agora R$ ${product.price.toFixed(2)}.`)
     }
 
+    // Resolve cover image via product_media (with color support)
+    const variantColorKey = variant
+      ? variant.colorName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-").toLowerCase()
+      : null
+    const coverResult = await resolveProductCover(item.productId, product.images, variantColorKey)
+
     results.push({
       productId: item.productId,
       variantSku: item.variantSku,
@@ -155,7 +165,7 @@ export async function POST(request: Request) {
         slug: product.slug,
         price: product.price,
         originalPrice: product.originalPrice,
-        image: product.images[0] || "/brand/placeholder-product.svg",
+        image: coverResult.url,
         status: product.status,
       },
       variant: variant
