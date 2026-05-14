@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, type ReactNode } from "react"
-import { useSearchParams, useRouter, usePathname } from "next/navigation"
+import { useSearchParams, usePathname } from "next/navigation"
 import { ProductCard } from "@/components/product-card"
 import { Icon } from "@/components/fashion/Icon"
 import {
@@ -23,7 +23,6 @@ function normalizeColor(value: string) {
 
 export function ProductsContent({ products }: { products: Product[] }) {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const pathname = usePathname()
 
   const urlCategory = searchParams.get("categoria") || ""
@@ -64,7 +63,7 @@ export function ProductsContent({ products }: { products: Product[] }) {
     if (next.preco[1] < MAX_PRICE) params.set("preco_max", String(next.preco[1]))
     if (nextQ) params.set("busca", nextQ)
     const qs = params.toString()
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    window.location.assign(qs ? `${pathname}?${qs}` : pathname)
   }
 
   const toggle = (key: keyof typeof filters, value: string) => {
@@ -92,7 +91,7 @@ export function ProductsContent({ products }: { products: Product[] }) {
 
   const clear = () => {
     const next = { categoria: [], tamanho: [], cor: [], preco: [MIN_PRICE, MAX_PRICE] as [number, number], disponibilidade: [] }
-    setFilters(next); setQ(""); setPage(1); router.replace(pathname, { scroll: false })
+    setFilters(next); setQ(""); setPage(1); window.location.assign(pathname)
   }
 
   const filteredProducts = useMemo(() => {

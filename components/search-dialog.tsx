@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { useRouter } from "next/navigation"
+
 import Image from "next/image"
 
 import { Search, X } from "lucide-react"
@@ -20,7 +20,6 @@ type SearchDialogProps = { open: boolean; onOpenChange: (open: boolean) => void 
 export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const [query, setQuery] = useState("")
   const [products, setProducts] = useState<SearchProduct[]>([])
-  const router = useRouter()
 
   // Fetch products when dialog opens
   useEffect(() => {
@@ -40,7 +39,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (query.trim()) {
-      router.push(`/produtos?busca=${encodeURIComponent(query.trim())}`)
+      window.location.assign(`/produtos?busca=${encodeURIComponent(query.trim())}`)
       onOpenChange(false)
       setQuery("")
     }

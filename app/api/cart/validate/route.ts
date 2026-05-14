@@ -128,10 +128,12 @@ export async function POST(request: Request) {
 
     // Estoque disponível (considerando reservas)
     let availableStock = variant.stock
+    let stockWarning: string | undefined
     try {
       availableStock = await getVariantAvailableStock(item.productId, item.variantSku)
-    } catch {
-      // Se falhar (sem Supabase), usa stock bruto da variante
+    } catch (stockErr) {
+      console.error(`[CartValidate] Falha ao validar estoque real para ${item.variantSku}:`, stockErr)
+      stockWarning = "Estoque pode estar desatualizado. O valor mostrado é aproximado."
     }
 
     const maxQuantity = shouldRemove ? 0 : availableStock
@@ -149,6 +151,7 @@ export async function POST(request: Request) {
       const dir = product.price > item.lastSeenPrice ? "subiu" : "baixou"
       warnings.push(`Preço ${dir}: era R$ ${item.lastSeenPrice.toFixed(2)}, agora R$ ${product.price.toFixed(2)}.`)
     }
+    if (stockWarning) warnings.push(stockWarning)
 
     // Resolve cover image via product_media (with color support)
     const variantColorKey = variant
