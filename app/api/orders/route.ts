@@ -2,6 +2,32 @@ import { NextResponse } from "next/server"
 import { createOrder, type CreateOrderInput } from "@/lib/services/orders"
 import { sendOrderConfirmation, sendAdminOrderNotification } from "@/lib/services/email"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
+import { createClient } from "@supabase/supabase-js"
+
+/**
+ * POST /api/orders — cria pedido.
+ * Se Authorization Bearer token estiver presente, vincula ao user_id.
+ */
+
+async function getUserFromToken(request: Request): Promise<{ id: string; email: string } | null> {
+  const authHeader = request.headers.get("authorization") || ""
+  const token = authHeader.replace("Bearer ", "").trim()
+  if (!token) return null
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !anonKey) return null
+
+  try {
+    const client = createClient(url, anonKey, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    })
+    const { data: { user } } = await client.auth.getUser(token)
+    if (user) return { id: user.id, email: user.email! }
+  } catch { /* token invalid */ }
+  return null
+}
 
 /**
  * POST /api/orders — Public endpoint for customers to place orders.
@@ -20,6 +46,7 @@ export async function POST(request: Request) {
   }
 
   const b = body as Record<string, unknown>
+  const authUser = await getUserFromToken(request)
 
   // Validate required fields
   const customerName = typeof b.customerName === "string" ? b.customerName.trim() : ""
@@ -47,10 +74,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const input: CreateOrderInput = {
+    const input: CreateOrderInput & { userId?: string } = {
       customerName,
       customerWhatsapp,
-      customerEmail: customerEmail || "",
+      customerEmail: customerEmail || (authUser?.email ?? ""),
       items: items.map((it: { productId: string; variantSku: string; quantity: number }) => ({
         productId: it.productId,
         variantSku: it.variantSku,
@@ -58,6 +85,7 @@ export async function POST(request: Request) {
       })),
       address,
       observation,
+      userId: authUser?.id,
     }
 
     const result = await createOrder(input)

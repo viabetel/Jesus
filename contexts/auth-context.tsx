@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Login ──
   const login = useCallback(async (email: string, password: string): Promise<{ ok: boolean; error?: string }> => {
     const sb = getSupabaseBrowser()
-    if (!sb) return { ok: false, error: "Serviço indisponível." }
+    if (!sb) return { ok: false, error: "Supabase não configurado. Verifique as variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY." }
 
     const { data, error } = await sb.auth.signInWithPassword({ email, password })
     if (error) return { ok: false, error: error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : error.message }
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     name: string; email: string; whatsapp: string; password: string
   }): Promise<{ ok: boolean; error?: string }> => {
     const sb = getSupabaseBrowser()
-    if (!sb) return { ok: false, error: "Serviço indisponível." }
+    if (!sb) return { ok: false, error: "Supabase não configurado. Verifique as variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY." }
 
     const { data, error } = await sb.auth.signUp({
       email: input.email,

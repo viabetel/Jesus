@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Icon } from "@/components/fashion/Icon"
 import { useCart } from "@/contexts/cart-context"
+import { useAuth } from "@/contexts/auth-context"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
+import { getSupabaseBrowser } from "@/lib/supabase-browser"
 import { formatPrice } from "@/lib/format"
 import { formatPhone } from "@/lib/phone"
 
@@ -21,6 +23,7 @@ function buildWhatsAppMessage(order: OrderResult, validItems: ReturnType<typeof 
 
 export function CartContent() {
   const { items, refs, loading, removeItem, updateQuantity, getSubtotal, clearCart, revalidate } = useCart()
+  const { user, isAuthenticated } = useAuth()
   const [step, setStep] = useState<"cart" | "checkout" | "confirmed">("cart")
   const [name, setName] = useState("")
   const [whatsNum, setWhatsNum] = useState("")
@@ -29,6 +32,16 @@ export function CartContent() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [order, setOrder] = useState<OrderResult | null>(null)
+
+  // Pre-fill com dados do usuário autenticado ao entrar no checkout
+  useEffect(() => {
+    if (step === "checkout" && isAuthenticated && user) {
+      if (!name && user.name) setName(user.name)
+      if (!email && user.email) setEmail(user.email)
+      if (!whatsNum && user.whatsapp) setWhatsNum(user.whatsapp)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, isAuthenticated, user])
 
   const validItems = items.filter(i => !i.shouldRemove && i.product)
   const subtotal = getSubtotal()
@@ -96,9 +109,19 @@ export function CartContent() {
       // Revalidate stock before submitting
       await revalidate()
 
+      // Get auth token if logged in
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      const sb = getSupabaseBrowser()
+      if (sb) {
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`
+        }
+      }
+
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           customerName: name.trim(),
           customerWhatsapp: whatsNum.trim(),

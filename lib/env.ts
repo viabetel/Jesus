@@ -1,8 +1,8 @@
 /**
  * Helpers de ambiente.
  *
- * canUseMemoryFallback agora é DESATIVADO por padrão.
- * Para ativar em dev local sem Supabase: ALLOW_LOCAL_FALLBACK=true
+ * canUseMemoryFallback retorna true SOMENTE quando ALLOW_LOCAL_FALLBACK=true.
+ * Em produção e no build da Vercel, Supabase é obrigatório.
  */
 
 export function isProduction(): boolean {
@@ -10,16 +10,9 @@ export function isProduction(): boolean {
 }
 
 /**
- * Fallback in-memory SÓ permitido quando explicitamente ativado.
- * Em produção, NUNCA permitir — dados devem vir do Supabase.
+ * Fallback in-memory SOMENTE quando explicitamente ativado.
+ * Não ativar em produção nem no build.
  */
 export function canUseMemoryFallback(): boolean {
-  // Build time (next build) precisa de fallback para generateStaticParams
-  const phase = process.env.NEXT_PHASE ?? ""
-  if (phase.includes("build") || phase.includes("generate")) return true
-
-  // Explicitamente ativado para dev
-  if (process.env.ALLOW_LOCAL_FALLBACK === "true") return true
-
-  return false
+  return process.env.ALLOW_LOCAL_FALLBACK === "true"
 }

@@ -48,7 +48,11 @@ export async function GET(request: Request) {
       headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" }
     })
   } catch (e) {
-    console.error("[API/products]", e)
-    return NextResponse.json([], { status: 200 })
+    const msg = e instanceof Error ? e.message : "Erro desconhecido"
+    console.error("[API/products] Erro:", msg)
+    return NextResponse.json(
+      { error: "Erro ao carregar catálogo.", detail: msg },
+      { status: 500 }
+    )
   }
 }
