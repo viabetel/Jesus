@@ -24,7 +24,7 @@ export function CategoryStrip() {
             <p className="caps text-[10px] tracking-[0.22em] text-[var(--muted-foreground)] sm:text-[11px]">Departamentos</p>
             <h2 className="mt-2 font-serif-italic text-[28px] leading-none sm:mt-3 sm:text-[36px] lg:text-[44px]">Encontre sua peça</h2>
           </div>
-          <Link
+          <a
             href="/produtos"
             className="caps text-[10px] text-[var(--ink)] border-b border-[var(--ink)]/20 hover:border-[var(--ink)] pb-1 transition flex items-center gap-2 group sm:text-[11px]"
           >
@@ -34,7 +34,7 @@ export function CategoryStrip() {
 
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-7 lg:gap-4">
           {items.map(it => (
-            <Link key={it.label} href={it.href} className="group relative aspect-[3/4] overflow-hidden bg-[var(--stone)]">
+            <a key={it.label} href={it.href} className="group relative aspect-[3/4] overflow-hidden bg-[var(--stone)]">
               {/* Gradient fallback */}
               <div className={`absolute inset-0 bg-gradient-to-br ${it.gradient}`} />
               {/* Image */}

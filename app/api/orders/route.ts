@@ -58,9 +58,6 @@ export async function POST(request: Request) {
 
   // If logged in, use session email (not form email)
   const customerEmail = authUser?.email || customerEmailFromBody
-  const items = Array.isArray(b.items) ? b.items : []
-  const address = typeof b.address === "string" ? b.address.trim() : undefined
-  const observation = typeof b.observation === "string" ? b.observation.trim() : undefined
 
   if (!customerName) {
     return NextResponse.json({ error: "Nome é obrigatório." }, { status: 400 })

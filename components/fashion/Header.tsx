@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import Link from "next/link"
+
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Icon } from "@/components/fashion/Icon"
@@ -102,6 +102,7 @@ export function FashionHeader({ transparent = false }: { transparent?: boolean }
   const [activeTab, setActiveTab] = useState(0)
   const [searchOpen, setSearchOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [mobileDrawer, setMobileDrawer] = useState(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const { getItemCount } = useCart()
@@ -150,43 +151,47 @@ export function FashionHeader({ transparent = false }: { transparent?: boolean }
             ))}
           </div>
           {/* Wordmark */}
-          <Link href="/" className="cursor-pointer text-center select-none col-start-2">
+          <a href="/" className="cursor-pointer text-center select-none col-start-2">
             <span className="font-serif italic font-bold text-[28px] leading-none tracking-tight sm:text-[34px] lg:text-[40px]">
               Fashion<span className="text-[14px] not-italic font-normal align-top ml-0.5 sm:text-[16px] lg:text-[18px]">®</span>
             </span>
-          </Link>
+          </a>
+          {/* Mobile menu button */}
+          <button onClick={() => setMobileDrawer(true)} className={`lg:hidden ${hoverOpacity} transition`} aria-label="Menu">
+            <Icon name="menu" size={22}/>
+          </button>
           {/* Utilities */}
           <div className="flex items-center justify-end gap-4 sm:gap-5 lg:gap-6">
             <button onClick={() => setSearchOpen(true)} className={`${hoverOpacity} transition`} aria-label="Buscar">
               <Icon name="search" size={transparent ? 19 : 18}/>
             </button>
-            <Link href="/login" className={`hidden sm:block ${hoverOpacity} transition`} aria-label="Conta">
+            <a href="/login" className={`hidden sm:block ${hoverOpacity} transition`} aria-label="Conta">
               <Icon name="user" size={transparent ? 19 : 18}/>
-            </Link>
-            <Link href="/favoritos" className={`${hoverOpacity} transition relative`} aria-label="Favoritos">
+            </a>
+            <a href="/favoritos" className={`${hoverOpacity} transition relative`} aria-label="Favoritos">
               <Icon name="heart" size={transparent ? 19 : 18}/>
               {favCount > 0 && (
                 <span className={`absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full text-[9px] font-semibold ${transparent ? "bg-white text-ink" : "bg-ink text-white"}`}>{favCount}</span>
               )}
-            </Link>
-            <Link href="/sacola" className={`relative ${hoverOpacity} transition`} aria-label="Sacola">
+            </a>
+            <a href="/sacola" className={`relative ${hoverOpacity} transition`} aria-label="Sacola">
               <Icon name="bag" size={transparent ? 19 : 18}/>
               {cartCount > 0 && (
                 <span className={`absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full text-[9px] font-semibold ${transparent ? "bg-white text-ink" : "bg-ink text-white"}`}>{cartCount}</span>
               )}
-            </Link>
+            </a>
           </div>
         </div>
 
-        {/* ─── Main nav row ─── */}
-        <nav className="relative mt-3 sm:mt-5">
+        {/* ─── Main nav row (desktop only) ─── */}
+        <nav className="relative mt-3 sm:mt-5 hidden lg:block">
           <div
-            className="mx-auto max-w-[1600px] px-6 h-12 flex items-center justify-center gap-5 overflow-x-auto sm:px-10 sm:h-14 sm:gap-7 lg:gap-9"
+            className="mx-auto max-w-[1600px] px-10 h-14 flex items-center justify-center gap-9"
             onMouseLeave={scheduleClose}
             onMouseEnter={cancelClose}
           >
             {NAV.map(n => (
-              <Link
+              <a
                 key={n.key}
                 href={n.href}
                 onMouseEnter={() => hasMega(n) ? openMega(n.key) : (setActive(null))}
@@ -201,7 +206,7 @@ export function FashionHeader({ transparent = false }: { transparent?: boolean }
                   }`}/>
                 </span>
                 {hasMega(n) && <Icon name="chevron-down" size={11} className={`transition-transform duration-300 ${active === n.key ? "rotate-180" : ""}`}/>}
-              </Link>
+              </a>
             ))}
           </div>
 
@@ -235,7 +240,7 @@ export function FashionHeader({ transparent = false }: { transparent?: boolean }
                 <div className="flex flex-col">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                     {megaCurrent.tabs[activeTab].links.map((l, i) => (
-                      <Link
+                      <a
                         key={l.label}
                         href={l.href}
                         onClick={() => setActive(null)}
@@ -243,22 +248,22 @@ export function FashionHeader({ transparent = false }: { transparent?: boolean }
                         style={{ animationDelay: `${120 + i * 30}ms` }}
                       >
                         {l.label}
-                      </Link>
+                      </a>
                     ))}
                   </div>
                   <div className="mt-auto pt-6 sm:pt-8">
-                    <Link
+                    <a
                       href={megaCurrent.href}
                       onClick={() => setActive(null)}
                       className="mega-link inline-flex items-center gap-2 cursor-pointer caps text-[11.5px] text-ink border-b border-ink/20 hover:border-ink pb-1 transition-all group"
                     >
                       Ver Linha Completa
                       <span className="transition-transform duration-300 group-hover:translate-x-1"><Icon name="arrow-right" size={13}/></span>
-                    </Link>
+                    </a>
                   </div>
                 </div>
                 {/* Right — featured image */}
-                <Link
+                <a
                   href={megaCurrent.href}
                   onClick={() => setActive(null)}
                   className="mega-feature relative hidden aspect-[5/4] cursor-pointer overflow-hidden group bg-stone lg:block"
@@ -277,12 +282,38 @@ export function FashionHeader({ transparent = false }: { transparent?: boolean }
                     <h4 className="font-serif italic font-bold text-white text-[28px] leading-none">{megaCurrent.hero.title}</h4>
                     <span className="mt-2 bg-white px-5 py-2.5 caps text-[10px] text-ink hover:bg-cream transition">Linha Completa</span>
                   </div>
-                </Link>
+                </a>
               </div>
             )}
           </div>
         </nav>
       </header>
+
+      {/* ─── Mobile Drawer ─── */}
+      {mobileDrawer && (
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileDrawer(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-white flex flex-col animate-in slide-in-from-left duration-300">
+            <div className="flex items-center justify-between px-5 h-14 border-b border-[var(--border)]">
+              <span className="font-serif text-lg font-bold">Menu</span>
+              <button onClick={() => setMobileDrawer(false)} aria-label="Fechar"><Icon name="x" size={20}/></button>
+            </div>
+            <nav className="flex-1 overflow-y-auto py-4">
+              {NAV.map(n => (
+                <a key={n.key} href={n.href}
+                  className="block px-5 py-3 text-[14px] font-medium text-[var(--ink)] hover:bg-[var(--cream)] transition">
+                  {n.label}
+                </a>
+              ))}
+              <div className="border-t border-[var(--border)] mt-4 pt-4 px-5 space-y-3">
+                <a href="/login" className="block text-[13px] text-[var(--muted-foreground)] hover:text-[var(--ink)]">Minha Conta</a>
+                <a href="/favoritos" className="block text-[13px] text-[var(--muted-foreground)] hover:text-[var(--ink)]">Favoritos</a>
+                <a href="/sacola" className="block text-[13px] text-[var(--muted-foreground)] hover:text-[var(--ink)]">Sacola</a>
+              </div>
+            </nav>
+          </div>
+        </div>
+      )}
 
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </>

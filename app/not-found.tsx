@@ -1,4 +1,4 @@
-import Link from "next/link"
+
 import Image from "next/image"
 import { Home, ShoppingBag, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -7,7 +7,7 @@ import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
 export default function NotFound() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-4 text-center">
-      <Link href="/" className="mb-8">
+      <a href="/" className="mb-8">
         <Image
           src="/brand/logo-dark.png"
           alt="Fashion Store"
@@ -15,7 +15,7 @@ export default function NotFound() {
           height={80}
           className="h-20 w-20"
         />
-      </Link>
+      </a>
 
       <h1 className="font-serif text-6xl font-bold text-primary lg:text-8xl">
         404
@@ -31,18 +31,18 @@ export default function NotFound() {
       </p>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-        <Link href="/">
+        <a href="/">
           <Button variant="outline" className="w-full gap-2 sm:w-auto">
             <Home className="h-4 w-4" />
             Voltar ao início
           </Button>
-        </Link>
-        <Link href="/produtos">
+        </a>
+        <a href="/produtos">
           <Button className="w-full gap-2 sm:w-auto">
             <ShoppingBag className="h-4 w-4" />
             Ver produtos
           </Button>
-        </Link>
+        </a>
       </div>
 
       <a

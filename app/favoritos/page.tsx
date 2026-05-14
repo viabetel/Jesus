@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+
 import { FashionHeader } from "@/components/fashion/Header"
 import { FashionFooter } from "@/components/fashion/Footer"
 import { Icon } from "@/components/fashion/Icon"
@@ -36,12 +36,12 @@ export default function FavoritesPage() {
               <p className="mt-2 text-[13px] text-[var(--muted-foreground)] max-w-md mx-auto sm:text-[14px]">
                 Crie sua conta ou entre para salvar peças favoritas e acessá-las em qualquer dispositivo.
               </p>
-              <Link
+              <a
                 href="/login"
                 className="mt-6 inline-flex items-center gap-3 bg-[var(--ink)] text-white caps text-[10px] px-6 h-11 hover:bg-[var(--fg-soft)] transition sm:mt-8 sm:text-[11px] sm:px-7 sm:h-12"
               >
                 Entrar na conta <Icon name="arrow-right" size={13}/>
-              </Link>
+              </a>
             </div>
           ) : favorites.length === 0 ? (
             <div className="mt-20 text-center sm:mt-24">
@@ -52,12 +52,12 @@ export default function FavoritesPage() {
               <p className="mt-2 text-[13px] text-[var(--muted-foreground)] max-w-md mx-auto sm:text-[14px]">
                 Salve as peças favoritas tocando no ❤ — assim você acessa rapidamente em uma próxima visita.
               </p>
-              <Link
+              <a
                 href="/produtos"
                 className="mt-6 inline-flex items-center gap-3 bg-[var(--ink)] text-white caps text-[10px] px-6 h-11 hover:bg-[var(--fg-soft)] transition sm:mt-8 sm:text-[11px] sm:px-7 sm:h-12"
               >
                 Explorar Catálogo <Icon name="arrow-right" size={13}/>
-              </Link>
+              </a>
             </div>
           ) : (
             <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-8 sm:mt-12 sm:gap-x-6 sm:gap-y-14 md:grid-cols-3 lg:grid-cols-4">

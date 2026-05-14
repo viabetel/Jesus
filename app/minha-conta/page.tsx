@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+
+
 import {
   User,
   Heart,
@@ -40,7 +40,7 @@ import { toast } from "sonner"
 export default function AccountPage() {
   const { user, orders, isAuthenticated, isHydrated, updateUser, logout } = useAuth()
   const { favorites } = useFavorites()
-  const router = useRouter()
+  
 
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
@@ -65,7 +65,7 @@ export default function AccountPage() {
         preferredSize: user.preferredSize || "",
       })
     }
-  }, [isAuthenticated, isHydrated, user, router])
+  }, [isAuthenticated, isHydrated, user])
 
   const handleSave = async () => {
     const result = await updateUser(formData)
@@ -77,9 +77,9 @@ export default function AccountPage() {
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    router.push("/")
+  const handleLogout = async () => {
+    await logout()
+    window.location.assign("/")
     toast.success("Você saiu da sua conta")
   }
 
@@ -257,12 +257,12 @@ export default function AccountPage() {
                     <p className="mt-1 text-sm text-muted-foreground">
                       Seus pedidos enviados pelo WhatsApp aparecerão aqui.
                     </p>
-                    <Link href="/produtos" className="mt-6">
+                    <a href="/produtos" className="mt-6">
                       <Button variant="outline" className="gap-2 rounded-full">
                         <ShoppingBag className="h-4 w-4" />
                         Ver produtos
                       </Button>
-                    </Link>
+                    </a>
                   </div>
                 )}
               </div>
@@ -285,12 +285,12 @@ export default function AccountPage() {
                     </div>
                     <p className="mt-4 font-serif font-semibold">Nenhum favorito</p>
                     <p className="mt-1 text-sm text-muted-foreground">Favorite produtos para encontrá-los facilmente.</p>
-                    <Link href="/produtos" className="mt-6">
+                    <a href="/produtos" className="mt-6">
                       <Button variant="outline" className="gap-2 rounded-full">
                         <ShoppingBag className="h-4 w-4" />
                         Ver produtos
                       </Button>
-                    </Link>
+                    </a>
                   </div>
                 )}
               </div>

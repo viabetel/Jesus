@@ -94,6 +94,7 @@ async function findProductVariant(
 async function getConsumedStock(variantSku: string): Promise<number> {
   const sb = getSupabase()
   if (!sb) {
+    if (!canUseMemoryFallback()) return 0
     // Modo dev sem Supabase: estoque consumido é o que está em memória
     return memoryReservations
       .filter((r) => r.variant_sku === variantSku && r.state !== "released")
@@ -170,6 +171,7 @@ function rowToOrder(row: MemoryOrder | Record<string, unknown>): Order {
 export async function getOrders(): Promise<Order[]> {
   const sb = getSupabase()
   if (!sb) {
+    if (!canUseMemoryFallback()) throw new Error("Supabase obrigatório para listar pedidos.")
     return [...memoryOrders]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .map(rowToOrder)
@@ -186,6 +188,7 @@ export async function getOrders(): Promise<Order[]> {
 export async function getOrderById(id: string): Promise<Order | null> {
   const sb = getSupabase()
   if (!sb) {
+    if (!canUseMemoryFallback()) throw new Error("Supabase obrigatório.")
     const o = memoryOrders.find((m) => m.id === id)
     return o ? rowToOrder(o) : null
   }
@@ -394,6 +397,7 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
   const now = new Date().toISOString()
 
   if (!sb) {
+    if (!canUseMemoryFallback()) throw new Error("Supabase obrigatório para atualizar pedido.")
     const o = memoryOrders.find((m) => m.id === id)
     if (!o) return null
     o.status = status

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import Link from "next/link"
+
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import {
@@ -112,12 +112,12 @@ export function Header() {
             </div>
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 lg:mr-6">
+            <a href="/" className="flex items-center gap-2 lg:mr-6">
               <Image src="/brand/logo-dark.svg" alt="Fashion Store" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8" priority />
               <span className="hidden text-[15px] font-bold tracking-tight min-[400px]:block lg:text-base" style={{ fontFamily: "var(--font-serif)" }}>
                 Fashion Store
               </span>
-            </Link>
+            </a>
 
             {/* Desktop nav */}
             <nav className="hidden lg:flex lg:items-center lg:gap-0">
@@ -127,7 +127,7 @@ export function Header() {
                   onMouseEnter={() => openMega(item.label)}
                   onMouseLeave={closeMega}
                 >
-                  <Link
+                  <a
                     href={item.href}
                     className={cn(
                       "relative flex items-center gap-1 px-3 py-2 text-[13px] font-semibold transition-colors duration-150",
@@ -146,14 +146,14 @@ export function Header() {
                     {activeMega === item.label && (
                       <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-foreground" />
                     )}
-                  </Link>
+                  </a>
                 </div>
               ))}
               {navLinks.map(l => (
-                <Link key={l.name} href={l.href}
+                <a key={l.name} href={l.href}
                   className={cn("px-2.5 py-2 text-[13px] font-medium transition-colors", pathname === l.href ? "text-foreground" : "text-foreground/45 hover:text-foreground")}>
                   {l.name}
-                </Link>
+                </a>
               ))}
             </nav>
 
@@ -176,23 +176,23 @@ export function Header() {
                 <Search className="h-[18px] w-[18px]" />
               </Button>
 
-              <Link href="/favoritos">
+              <a href="/favoritos">
                 <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-label="Favoritos">
                   <Heart className="h-[18px] w-[18px]" />
                   {favCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-foreground text-[9px] font-bold text-background">{favCount}</span>}
                 </Button>
-              </Link>
+              </a>
 
-              <Link href={isAuthenticated ? "/minha-conta" : "/login"} className="hidden sm:block">
+              <a href={isAuthenticated ? "/minha-conta" : "/login"} className="hidden sm:block">
                 <Button variant="ghost" size="icon" className="h-10 w-10" aria-label="Conta"><User className="h-[18px] w-[18px]" /></Button>
-              </Link>
+              </a>
 
-              <Link href="/sacola">
+              <a href="/sacola">
                 <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-label="Sacola">
                   <ShoppingBag className="h-[18px] w-[18px]" />
                   {itemCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-foreground text-[9px] font-bold text-background">{itemCount}</span>}
                 </Button>
-              </Link>
+              </a>
 
               {/* Desktop WhatsApp with label */}
               <a href={createWhatsAppLink(WHATSAPP_NUMBER, "Olá! Vim pelo site e gostaria de mais informações.")} target="_blank" rel="noopener noreferrer"
@@ -235,13 +235,13 @@ export function Header() {
                         <ul className="space-y-0.5">
                           {section.links.map(link => (
                             <li key={link.name}>
-                              <Link href={link.href} onClick={() => setActiveMega(null)}
+                              <a href={link.href} onClick={() => setActiveMega(null)}
                                 className="group/link flex items-center gap-2 rounded-lg px-2.5 py-[7px] -ml-2.5 text-[13px] font-medium text-foreground/65 transition-all hover:bg-muted/50 hover:text-foreground">
                                 {link.name}
                                 {link.badge && (
                                   <span className="rounded bg-foreground px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-background">{link.badge}</span>
                                 )}
-                              </Link>
+                              </a>
                             </li>
                           ))}
                         </ul>
@@ -259,7 +259,7 @@ export function Header() {
                           { icon: MessageCircle, label: "WhatsApp", href: createWhatsAppLink(WHATSAPP_NUMBER, "Olá!"), color: "text-[#25D366]", external: true },
                         ].map(item => {
                           const Icon = item.icon
-                          const Comp = item.external ? "a" : Link
+                          const Comp = "a"
                           const extra = item.external ? { target: "_blank", rel: "noopener noreferrer" } : {}
                           return (
                             <li key={item.label}>
@@ -294,7 +294,7 @@ function FeaturedCard({ featured, label, onClose }: { featured: MegaMenuFeatured
   const hasImg = !imgErr && featured.image
 
   return (
-    <Link href={featured.href} onClick={onClose} className="group relative block overflow-hidden rounded-2xl" style={{ minHeight: 340 }}>
+    <a href={featured.href} onClick={onClose} className="group relative block overflow-hidden rounded-2xl" style={{ minHeight: 340 }}>
       {hasImg ? (
         <Image src={featured.image} alt={featured.title} fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]" sizes="340px" onError={() => setImgErr(true)} />
       ) : (
@@ -323,7 +323,7 @@ function FeaturedCard({ featured, label, onClose }: { featured: MegaMenuFeatured
           <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
-    </Link>
+    </a>
   )
 }
 
@@ -349,7 +349,7 @@ function MobileDrawer({ onClose, pathname }: { onClose: () => void; pathname: st
       </div>
 
       <nav className="flex-1 overflow-y-auto">
-        <Link href="/" onClick={onClose} className={cn("flex items-center px-5 py-3 text-[14px] font-semibold", pathname === "/" ? "text-foreground" : "text-foreground/65")}>Início</Link>
+        <a href="/" onClick={onClose} className={cn("flex items-center px-5 py-3 text-[14px] font-semibold", pathname === "/" ? "text-foreground" : "text-foreground/65")}>Início</a>
         <div className="mx-5 border-t border-border/20" />
 
         {mobileMenuGroups.map(group => (
@@ -363,10 +363,10 @@ function MobileDrawer({ onClose, pathname }: { onClose: () => void; pathname: st
               const isExp = expanded === item.name
 
               if (!hasSub) return (
-                <Link key={item.name} href={item.href} onClick={onClose}
+                <a key={item.name} href={item.href} onClick={onClose}
                   className="flex items-center justify-between px-5 py-3 text-[14px] font-medium text-foreground/65 transition-colors">
                   {item.name}<ChevronRight className="h-3.5 w-3.5 text-foreground/25" />
-                </Link>
+                </a>
               )
 
               return (
@@ -378,18 +378,18 @@ function MobileDrawer({ onClose, pathname }: { onClose: () => void; pathname: st
                   </button>
                   {isExp && megaEntry && (
                     <div className="bg-muted/25 pb-2">
-                      <Link href={megaEntry.href} onClick={onClose} className="flex items-center gap-1.5 px-7 py-2.5 text-[13px] font-semibold text-foreground/75">
+                      <a href={megaEntry.href} onClick={onClose} className="flex items-center gap-1.5 px-7 py-2.5 text-[13px] font-semibold text-foreground/75">
                         Ver todos<ChevronRight className="h-3 w-3" />
-                      </Link>
+                      </a>
                       {megaEntry.sections.map(s => (
                         <div key={s.title} className="px-7 py-1">
                           <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.16em] text-foreground/25">{s.title}</p>
                           {s.links.map(l => (
-                            <Link key={l.name} href={l.href} onClick={onClose}
+                            <a key={l.name} href={l.href} onClick={onClose}
                               className="flex items-center gap-2 py-2 text-[13px] text-foreground/60 hover:text-foreground">
                               {l.name}
                               {l.badge && <span className="rounded bg-foreground px-1.5 py-px text-[7px] font-bold uppercase text-background">{l.badge}</span>}
-                            </Link>
+                            </a>
                           ))}
                         </div>
                       ))}
@@ -403,15 +403,15 @@ function MobileDrawer({ onClose, pathname }: { onClose: () => void; pathname: st
 
         <div className="mx-5 mt-2 border-t border-border/20" />
         {navLinks.map(l => (
-          <Link key={l.name} href={l.href} onClick={onClose}
+          <a key={l.name} href={l.href} onClick={onClose}
             className="flex items-center justify-between px-5 py-3 text-[14px] font-medium text-foreground/65">
             {l.name}<ChevronRight className="h-3.5 w-3.5 text-foreground/25" />
-          </Link>
+          </a>
         ))}
         <div className="mx-5 border-t border-border/20" />
-        <Link href="/login" onClick={onClose} className="flex items-center gap-3 px-5 py-3 text-[14px] font-medium text-foreground/65">
+        <a href="/login" onClick={onClose} className="flex items-center gap-3 px-5 py-3 text-[14px] font-medium text-foreground/65">
           <User className="h-4 w-4" />Minha conta
-        </Link>
+        </a>
       </nav>
 
       <div className="border-t border-border/30 p-4 space-y-2.5 safe-bottom">

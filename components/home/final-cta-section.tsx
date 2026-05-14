@@ -1,4 +1,4 @@
-import Link from "next/link"
+
 import Image from "next/image"
 import { ArrowRight, MessageCircle } from "lucide-react"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
@@ -24,12 +24,12 @@ export function FinalCTASection() {
           Escolha sua camiseta no catálogo e finalize direto pelo WhatsApp.
         </p>
         <div className="mt-6 flex items-center gap-3 flex-wrap justify-center sm:mt-9 sm:gap-4">
-          <Link
+          <a
             href="/produtos"
             className="inline-flex items-center gap-3 bg-white text-[var(--ink)] caps text-[10px] px-6 h-11 hover:bg-[var(--cream)] transition sm:text-[11px] sm:px-7 sm:h-12"
           >
             Ver Catálogo <ArrowRight size={13} />
-          </Link>
+          </a>
           <a
             href={createWhatsAppLink(WHATSAPP_NUMBER, "Olá! Vi o catálogo e quero comprar uma camiseta.")}
             target="_blank"

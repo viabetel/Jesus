@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+
 import Image from "next/image"
 import { Icon } from "@/components/fashion/Icon"
 import { useCart } from "@/contexts/cart-context"
@@ -74,9 +74,9 @@ export function CartContent() {
           >
             <Icon name="whatsapp" size={17} color="white" /> Continuar pelo WhatsApp
           </a>
-          <Link href="/produtos" className="h-14 px-8 border border-[var(--border)] caps text-[12px] text-[var(--ink)] inline-flex items-center justify-center gap-2 hover:bg-[var(--cream)] transition">
+          <a href="/produtos" className="h-14 px-8 border border-[var(--border)] caps text-[12px] text-[var(--ink)] inline-flex items-center justify-center gap-2 hover:bg-[var(--cream)] transition">
             Voltar ao catálogo
-          </Link>
+          </a>
           {isAuthenticated && (
             <a href="/minha-conta" className="h-14 px-8 border border-[var(--border)] caps text-[12px] text-[var(--ink)] inline-flex items-center justify-center gap-2 hover:bg-[var(--cream)] transition">
               Ver meus pedidos
@@ -94,9 +94,9 @@ export function CartContent() {
         <div className="inline-grid h-16 w-16 place-items-center bg-[var(--cream)] rounded-full mx-auto"><Icon name="bag" size={24} /></div>
         <p className="mt-6 font-serif italic font-bold text-[28px]">Sua sacola está vazia</p>
         <p className="mt-2 text-[14px] text-muted-fg">Explore o catálogo e escolha camisetas com mensagem, estilo e propósito.</p>
-        <Link href="/produtos" className="mt-8 inline-flex items-center gap-3 bg-[var(--ink)] text-white caps text-[11px] px-7 h-12 hover:bg-[var(--fg-soft)] transition">
+        <a href="/produtos" className="mt-8 inline-flex items-center gap-3 bg-[var(--ink)] text-white caps text-[11px] px-7 h-12 hover:bg-[var(--fg-soft)] transition">
           Ver Catálogo <Icon name="arrow-right" size={13} />
-        </Link>
+        </a>
       </div>
     )
   }
@@ -225,11 +225,11 @@ export function CartContent() {
             return (
               <div key={`${item.ref.productId}-${item.ref.variantSku}`} className="py-6 grid gap-4 md:grid-cols-[1fr_120px_120px_120px_40px] md:items-center min-w-0">
                 <div className="flex gap-4">
-                  <Link href={`/produto/${product.slug}`} className="relative h-28 w-20 bg-[var(--stone)] overflow-hidden shrink-0 sm:h-32 sm:w-24">
+                  <a href={`/produto/${product.slug}`} className="relative h-28 w-20 bg-[var(--stone)] overflow-hidden shrink-0 sm:h-32 sm:w-24">
                     <Image src={product.image && product.image.length > 1 ? product.image : "/brand/placeholder-product.svg"} alt={product.name} fill className="object-cover" sizes="96px" />
-                  </Link>
+                  </a>
                   <div>
-                    <Link href={`/produto/${product.slug}`} className="caps text-[12px] text-[var(--ink)] hover:underline underline-offset-4">{product.name}</Link>
+                    <a href={`/produto/${product.slug}`} className="caps text-[12px] text-[var(--ink)] hover:underline underline-offset-4">{product.name}</a>
                     <p className="mt-2 text-[12px] text-muted-fg">Tamanho: {item.variant?.size ?? "—"}</p>
                     <p className="text-[12px] text-muted-fg">Cor: {item.variant?.colorName ?? "—"}</p>
                     {item.warnings.length > 0 && <p className="mt-2 text-[11px] text-[var(--promo)]">{item.warnings[0]}</p>}

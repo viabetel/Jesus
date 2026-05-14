@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useSearchParams } from "next/navigation"
+
 import Image from "next/image"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -9,14 +9,14 @@ import { useAuth } from "@/contexts/auth-context"
 
 export default function LoginPage() {
   const { login, isAuthenticated } = useAuth()
-  const searchParams = useSearchParams()
+  
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
 
   // returnTo: only accept internal paths
-  const next = searchParams.get("next") || "/minha-conta"
+  const next = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') || '/minha-conta' : '/minha-conta'
   const returnTo = next.startsWith("/") ? next : "/minha-conta"
 
   // If already authenticated, redirect immediately

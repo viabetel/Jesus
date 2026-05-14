@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
+
 import Image from "next/image"
 import { toast } from "sonner"
 import { Icon } from "@/components/fashion/Icon"
@@ -80,7 +80,7 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
     <section className="pb-24 bg-bg overflow-x-hidden">
       <div className="mx-auto max-w-[1600px] px-6 sm:px-10">
         <div className="text-[11px] caps tracking-[0.22em] text-muted-fg mb-8">
-          <Link href="/" className="hover:text-ink">Fashion Store</Link> / <Link href="/produtos" className="hover:text-ink">Catálogo</Link> / <span className="text-ink">{product.name}</span>
+          <a href="/" className="hover:text-ink">Fashion Store</a> / <a href="/produtos" className="hover:text-ink">Catálogo</a> / <span className="text-ink">{product.name}</span>
         </div>
 
         <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-14 xl:grid-cols-[1.15fr_1fr]">
@@ -115,9 +115,9 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
 
             <p className="mt-6 text-[14.5px] text-fg-soft leading-relaxed">{product.description}</p>
 
-            <Link href="/guia-de-medidas" className="mt-6 inline-flex items-center gap-2 px-4 h-10 border border-border text-[12px] hover:border-ink transition">
+            <a href="/guia-de-medidas" className="mt-6 inline-flex items-center gap-2 px-4 h-10 border border-border text-[12px] hover:border-ink transition">
               <Icon name="ruler" size={14}/> Tabela de Medidas
-            </Link>
+            </a>
 
             {allColors.length > 0 && (
               <div className="mt-7">

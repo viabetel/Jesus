@@ -1,4 +1,4 @@
-import Link from "next/link"
+
 import Image from "next/image"
 import { ArrowRight, MessageCircle } from "lucide-react"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
@@ -15,12 +15,12 @@ export function ProntaEntregaBand() {
             Escolha sua peça e fale com a gente pelo WhatsApp. Atendimento direto, sem checkout complicado.
           </p>
           <div className="mt-6 flex items-center gap-3 flex-wrap sm:mt-8 sm:gap-4">
-            <Link
+            <a
               href="/produtos?destaque=pronta-entrega"
               className="inline-flex items-center gap-3 bg-[var(--ink)] text-white caps text-[10px] px-6 h-11 hover:bg-[var(--fg-soft)] transition sm:text-[11px] sm:px-7 sm:h-12"
             >
               Ver peças disponíveis <ArrowRight size={13} />
-            </Link>
+            </a>
             <a
               href={createWhatsAppLink(WHATSAPP_NUMBER, "Olá! Quero ver as peças disponíveis para pronta entrega.")}
               target="_blank"

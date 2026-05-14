@@ -53,7 +53,7 @@ export function ProductCard({ product }: { product: CardProduct }) {
 
   return (
     <div className="group">
-      <Link
+      <a
         href={`/produto/${product.slug}`}
         className="block"
         onMouseEnter={() => setHovered(true)}

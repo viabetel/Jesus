@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import Link from "next/link"
+
 import { Search, X } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { formatPrice } from "@/lib/format"
@@ -58,7 +58,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         {results.length > 0 && (
           <div className="max-h-[60vh] overflow-y-auto p-2">
             {results.map(p => (
-              <Link key={p.id} href={`/produto/${p.slug}`} className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted transition-colors" onClick={() => { onOpenChange(false); setQuery("") }}>
+              <a key={p.id} href={`/produto/${p.slug}`} className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted transition-colors" onClick={() => { onOpenChange(false); setQuery("") }}>
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
                   <Image src={p.coverImage || p.images?.[0] || "/brand/placeholder-product.svg"} alt={p.name} fill className="object-cover" sizes="48px" />
                 </div>
@@ -67,7 +67,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   <p className="text-xs text-muted-foreground">{p.category}</p>
                 </div>
                 <span className={cn("text-sm font-semibold", p.originalPrice && "text-red-600")}>{formatPrice(p.price)}</span>
-              </Link>
+              </a>
             ))}
           </div>
         )}

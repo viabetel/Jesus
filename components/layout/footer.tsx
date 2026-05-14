@@ -1,4 +1,4 @@
-import Link from "next/link"
+
 import Image from "next/image"
 import { Instagram, Mail, MapPin, MessageCircle } from "lucide-react"
 import {
@@ -34,13 +34,13 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-10 sm:py-14 lg:py-20">
         {/* Brand — full width on top */}
         <div className="mb-8 sm:mb-10">
-          <Link href="/" className="inline-flex items-center gap-3">
+          <a href="/" className="inline-flex items-center gap-3">
             <Image src="/brand/logo-light.png" alt="Fashion Store" width={40} height={40} className="h-10 w-10 sm:h-12 sm:w-12" />
             <div>
               <span className="block font-serif text-base font-semibold sm:text-lg">Fashion Store</span>
               <span className="text-[9px] tracking-[0.12em] text-[#FAF9F6]/50 uppercase sm:text-[10px]">{STORE_TAGLINE}</span>
             </div>
-          </Link>
+          </a>
           <p className="mt-3 max-w-xs text-xs leading-relaxed text-[#FAF9F6]/50 sm:text-sm sm:text-[#FAF9F6]/60">
             Camisetas cristãs com estilo, qualidade e propósito.
           </p>
@@ -54,9 +54,9 @@ export function Footer() {
             <ul className="space-y-2 sm:space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-xs text-[#FAF9F6]/60 transition-colors hover:text-[#FAF9F6] sm:text-sm">
+                  <a href={link.href} className="text-xs text-[#FAF9F6]/60 transition-colors hover:text-[#FAF9F6] sm:text-sm">
                     {link.name}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -68,9 +68,9 @@ export function Footer() {
             <ul className="space-y-2 sm:space-y-3">
               {supportLinks.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-xs text-[#FAF9F6]/60 transition-colors hover:text-[#FAF9F6] sm:text-sm">
+                  <a href={link.href} className="text-xs text-[#FAF9F6]/60 transition-colors hover:text-[#FAF9F6] sm:text-sm">
                     {link.name}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>

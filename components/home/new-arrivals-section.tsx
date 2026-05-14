@@ -1,4 +1,4 @@
-import Link from "next/link"
+
 import { ArrowRight } from "lucide-react"
 import { ProductCard } from "@/components/product-card"
 import type { PublicProduct } from "@/lib/services/public-catalog"
@@ -17,12 +17,12 @@ export function NewArrivalsSection({ products }: { products: PublicProduct[] }) 
               Novas peças para renovar seu guarda-roupa com propósito.
             </p>
           </div>
-          <Link
+          <a
             href="/produtos?categoria=lancamentos"
             className="caps text-[10px] text-[var(--ink)] border-b border-[var(--ink)]/20 hover:border-[var(--ink)] pb-1 transition flex items-center gap-2 group sm:text-[11px]"
           >
             Ver todos os lançamentos <span className="transition-transform group-hover:translate-x-1"><ArrowRight size={13} /></span>
-          </Link>
+          </a>
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-14 md:grid-cols-4">

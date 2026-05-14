@@ -1,4 +1,4 @@
-import Link from "next/link"
+
 import { Ruler, MessageCircle } from "lucide-react"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
 
@@ -13,12 +13,12 @@ export function GuiaMedidasSection() {
             Consulte o guia de medidas ou fale com a gente antes de finalizar. A gente te orienta para acertar na primeira escolha.
           </p>
           <div className="mt-6 flex items-center gap-3 flex-wrap sm:mt-8 sm:gap-4">
-            <Link
+            <a
               href="/guia-de-medidas"
               className="inline-flex items-center gap-3 bg-[var(--ink)] text-white caps text-[10px] px-6 h-11 hover:bg-[var(--fg-soft)] transition sm:text-[11px] sm:px-7 sm:h-12"
             >
               <Ruler size={14} /> Ver guia de medidas
-            </Link>
+            </a>
             <a
               href={createWhatsAppLink(WHATSAPP_NUMBER, "Olá! Preciso de ajuda com o tamanho da camiseta.")}
               target="_blank"

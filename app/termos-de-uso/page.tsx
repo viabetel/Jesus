@@ -1,6 +1,6 @@
 import { FashionHeader } from "@/components/fashion/Header"
 import { FashionFooter } from "@/components/fashion/Footer"
-import Link from "next/link"
+
 
 export const metadata = {
   title: "Termos de Uso | Fashion Store",
@@ -30,7 +30,7 @@ export default function TermsPage() {
             </section>
             <section>
               <h2 className="caps text-[12px] text-ink mb-3">Privacidade</h2>
-              <p>Os dados informados no atendimento são utilizados apenas para contato, confirmação do pedido e entrega. Consulte também a nossa <Link href="/privacidade" className="underline underline-offset-4">Política de Privacidade</Link>.</p>
+              <p>Os dados informados no atendimento são utilizados apenas para contato, confirmação do pedido e entrega. Consulte também a nossa <a href="/privacidade" className="underline underline-offset-4">Política de Privacidade</a>.</p>
             </section>
           </div>
         </div>

@@ -23,7 +23,7 @@ export function CollectionsSection() {
 
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4 lg:gap-5">
           {items.map(it => (
-            <Link key={it.t} href={it.href} className="group relative aspect-[3/4] overflow-hidden bg-[var(--stone)]">
+            <a key={it.t} href={it.href} className="group relative aspect-[3/4] overflow-hidden bg-[var(--stone)]">
               <div className={`absolute inset-0 bg-gradient-to-br ${it.gradient}`} />
               <Image
                 src={it.img}
