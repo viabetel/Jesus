@@ -100,8 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Fetch orders when user changes ──
   const refreshOrders = useCallback(async () => {
     if (!user) { setOrders([]); return }
+    const sb = getSupabaseBrowser()
+    if (!sb) return
     try {
-      const res = await fetch(`/api/customer/orders?email=${encodeURIComponent(user.email)}`)
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session?.access_token) return
+      const res = await fetch("/api/customer/orders", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
       if (res.ok) {
         const data = await res.json()
         setOrders(Array.isArray(data) ? data : [])

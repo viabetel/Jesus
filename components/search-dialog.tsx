@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils"
 
 type SearchProduct = {
   id: string; name: string; slug: string; category: string
-  price: number; originalPrice?: number; images: string[]; badge?: string
+  price: number; originalPrice?: number; images: string[]
+  coverImage?: string; badge?: string
 }
 
 type SearchDialogProps = { open: boolean; onOpenChange: (open: boolean) => void }
@@ -59,7 +60,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             {results.map(p => (
               <Link key={p.id} href={`/produto/${p.slug}`} className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted transition-colors" onClick={() => { onOpenChange(false); setQuery("") }}>
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
-                  {p.images[0] && <Image src={p.images[0]} alt={p.name} fill className="object-cover" sizes="48px" />}
+                  {(p.coverImage || p.images[0]) && <Image src={p.coverImage || p.images[0]} alt={p.name} fill className="object-cover" sizes="48px" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{p.name}</p>

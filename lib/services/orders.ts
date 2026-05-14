@@ -1,5 +1,5 @@
 /**
- * Orders Service — persistência em Supabase com fallback in-memory para dev.
+ * Orders Service — Supabase obrigatório. Fallback in-memory só com ALLOW_LOCAL_FALLBACK=true.
  *
  * IMPORTANTE:
  *  - Preço, total, nome, cor, tamanho NUNCA são confiáveis no payload do
@@ -14,6 +14,7 @@
 import type { Product, ProductVariant } from "@/lib/data/products"
 import { getProductById } from "@/lib/services/products-repo"
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase"
+import { canUseMemoryFallback } from "@/lib/env"
 import { isProduction } from "@/lib/env"
 
 // ===== Tipos =====

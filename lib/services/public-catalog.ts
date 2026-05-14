@@ -77,7 +77,7 @@ export async function getPublicProducts(): Promise<PublicProduct[]> {
 
   const sb = getSupabase()
   if (!sb) {
-    // Dev fallback — no media enrichment
+    // No Supabase = no media enrichment (products still come from repo)
     return products.map(p => enrichProduct(p, []))
   }
 

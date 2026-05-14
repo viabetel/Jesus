@@ -1,11 +1,9 @@
 /**
- * Products Repository — Supabase com fallback in-memory.
+ * Products Repository — Supabase como fonte obrigatória.
  *
- * Filosofia:
- *  - O catálogo público (home, /produtos, /produto/[slug]) lê via `getProducts()`.
- *  - O admin escreve via createProduct/updateProduct/deleteProduct/upsertVariant.
- *  - Em dev sem Supabase, lemos do `lib/data/products.ts` estático (fonte
- *    legada). Mas qualquer escrita exige Supabase.
+ * Em produção, Supabase é OBRIGATÓRIO. Sem ele, lança erro.
+ * Em dev, fallback local só com ALLOW_LOCAL_FALLBACK=true.
+ * Em build time, fallback permitido para generateStaticParams.
  */
 
 import {
@@ -149,10 +147,11 @@ export async function getAllProducts(
 ): Promise<Product[]> {
   const sb = getSupabase()
   if (!sb) {
-    if (!canUseMemoryFallback()) {
-      console.error("[PRODUÇÃO] Supabase não configurado. Catálogo caindo para products.ts estático. Produtos editados no admin NÃO serão refletidos.")
+    if (canUseMemoryFallback()) {
+      console.warn("[Products] Supabase ausente — usando legacyProducts (ALLOW_LOCAL_FALLBACK=true)")
+      return legacyProducts
     }
-    return legacyProducts
+    throw new Error("Supabase obrigatório: catálogo não pode usar fallback local.")
   }
 
   let query = sb.from("products").select("*").order("sort_order").order("created_at")
@@ -183,10 +182,8 @@ export async function getAllProducts(
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const sb = getSupabase()
   if (!sb) {
-    if (!canUseMemoryFallback()) {
-      console.error("[PRODUÇÃO] Supabase não configurado. getProductBySlug caindo para products.ts.")
-    }
-    return legacyProducts.find((p) => p.slug === slug) ?? null
+    if (canUseMemoryFallback()) return legacyProducts.find((p) => p.slug === slug) ?? null
+    throw new Error("Supabase obrigatório: getProductBySlug não pode usar fallback local.")
   }
   const { data: row, error } = await sb
     .from("products")
@@ -206,10 +203,8 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 export async function getProductById(id: string): Promise<Product | null> {
   const sb = getSupabase()
   if (!sb) {
-    if (!canUseMemoryFallback()) {
-      console.error("[PRODUÇÃO] Supabase não configurado. getProductById caindo para products.ts.")
-    }
-    return legacyProducts.find((p) => p.id === id) ?? null
+    if (canUseMemoryFallback()) return legacyProducts.find((p) => p.id === id) ?? null
+    throw new Error("Supabase obrigatório: getProductById não pode usar fallback local.")
   }
   const { data: row, error } = await sb
     .from("products")

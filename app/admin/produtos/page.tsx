@@ -9,6 +9,9 @@ import {
   ChevronLeft, ChevronRight, AlertCircle, Loader2, Copy,
 } from "lucide-react"
 import type { Product } from "@/lib/data/products"
+
+// Product enriched with coverImage from /api/admin/products
+type AdminProduct = Product & { coverImage?: string | null }
 import { AdminShell } from "@/components/admin/admin-shell"
 import { statusLabel, statusColor } from "@/components/admin/status-helpers"
 
@@ -24,7 +27,7 @@ const filterLabels: Record<StatusFilter, string> = {
 
 export default function AdminProdutosPage() {
   const router = useRouter()
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<AdminProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
@@ -48,7 +51,7 @@ export default function AdminProdutosPage() {
     switch (statusFilter) {
       case "ativo": case "rascunho": case "oculto": case "esgotado":
         r = r.filter(p => p.status === statusFilter); break
-      case "sem-capa": r = r.filter(p => !(p as any).coverImage && (!p.images || p.images.length === 0 || p.images.every(img => !img))); break
+      case "sem-capa": r = r.filter(p => !p.coverImage && (!p.images || p.images.length === 0 || p.images.every(img => !img))); break
       case "sem-estoque": r = r.filter(p => p.variants.filter(v => v.active).reduce((s, v) => s + v.stock, 0) === 0); break
       case "promocao": r = r.filter(p => p.isPromotion); break
       case "lancamento": r = r.filter(p => p.isNew); break
@@ -76,7 +79,7 @@ export default function AdminProdutosPage() {
 
   function getStock(p: Product) { return p.variants.filter(v => v.active).reduce((s, v) => s + v.stock, 0) }
 
-  function getAlerts(p: Product & { coverImage?: string | null }): string[] {
+  function getAlerts(p: AdminProduct): string[] {
     const a: string[] = []
     const hasCover = !!p.coverImage || (p.images && p.images.some(img => !!img))
     if (!hasCover) a.push("Sem imagem")
@@ -151,7 +154,7 @@ export default function AdminProdutosPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-neutral-900 border border-neutral-800">
-                                {(p as any).coverImage || p.images?.[0] ? <Image src={(p as any).coverImage || p.images[0]} alt="" fill className="object-cover" sizes="48px" unoptimized /> : <div className="flex h-full items-center justify-center text-neutral-700"><AlertCircle className="h-4 w-4" /></div>}
+                                {p.coverImage || p.images?.[0] ? <Image src={p.coverImage || p.images[0]} alt="" fill className="object-cover" sizes="48px" unoptimized /> : <div className="flex h-full items-center justify-center text-neutral-700"><AlertCircle className="h-4 w-4" /></div>}
                               </div>
                               <div className="min-w-0">
                                 <p className="truncate text-[13px] font-medium">{p.name}</p>
@@ -196,7 +199,7 @@ export default function AdminProdutosPage() {
                     <div key={p.id} className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3.5">
                       <div className="flex gap-3">
                         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-neutral-900 border border-neutral-800">
-                          {(p as any).coverImage || p.images?.[0] ? <Image src={(p as any).coverImage || p.images[0]} alt="" fill className="object-cover" sizes="64px" unoptimized /> : <div className="flex h-full items-center justify-center text-neutral-700"><AlertCircle className="h-5 w-5" /></div>}
+                          {p.coverImage || p.images?.[0] ? <Image src={p.coverImage || p.images[0]} alt="" fill className="object-cover" sizes="64px" unoptimized /> : <div className="flex h-full items-center justify-center text-neutral-700"><AlertCircle className="h-5 w-5" /></div>}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-semibold truncate">{p.name}</p>

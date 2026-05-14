@@ -77,7 +77,7 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
   }
 
   return (
-    <main className="pb-24 bg-bg overflow-x-hidden">
+    <section className="pb-24 bg-bg overflow-x-hidden">
       <div className="mx-auto max-w-[1600px] px-6 sm:px-10">
         <div className="text-[11px] caps tracking-[0.22em] text-muted-fg mb-8">
           <Link href="/" className="hover:text-ink">Fashion Store</Link> / <Link href="/produtos" className="hover:text-ink">Catálogo</Link> / <span className="text-ink">{product.name}</span>
@@ -182,6 +182,6 @@ export function ProductDetails({ product, structuredMedia = [] }: { product: Pro
           </aside>
         </div>
       </div>
-    </main>
+    </section>
   )
 }
