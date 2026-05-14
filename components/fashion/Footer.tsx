@@ -1,4 +1,4 @@
-import Link from "next/link"
+// Hard navigation
 import { Icon } from "@/components/fashion/Icon"
 import { WHATSAPP_NUMBER, WHATSAPP_DISPLAY, STORE_EMAIL, createWhatsAppLink } from "@/lib/whatsapp"
 
@@ -95,9 +95,9 @@ export function FashionFooter() {
                       {l.label}
                     </a>
                   ) : (
-                    <Link href={l.href} className="text-[12px] text-white/80 hover:text-white cursor-pointer transition sm:text-[13.5px]">
+                    <a href={l.href} className="text-[12px] text-white/80 hover:text-white cursor-pointer transition sm:text-[13.5px]">
                       {l.label}
-                    </Link>
+                    </a>
                   )}
                 </li>
               ))}

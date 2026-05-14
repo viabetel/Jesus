@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { homeMedia } from "@/lib/home-media"
@@ -42,7 +42,7 @@ export function CollectionsSection() {
                   Explorar <ArrowRight size={11} />
                 </span>
               </div>
-            </Link>
+            </a>
           ))}
         </div>
       </div>

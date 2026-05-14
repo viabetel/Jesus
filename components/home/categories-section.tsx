@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { homeMedia } from "@/lib/home-media"
@@ -29,7 +29,7 @@ export function CategoryStrip() {
             className="caps text-[10px] text-[var(--ink)] border-b border-[var(--ink)]/20 hover:border-[var(--ink)] pb-1 transition flex items-center gap-2 group sm:text-[11px]"
           >
             Ver tudo <span className="transition-transform group-hover:translate-x-1"><ArrowRight size={13} /></span>
-          </Link>
+          </a>
         </div>
 
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-7 lg:gap-4">
@@ -55,7 +55,7 @@ export function CategoryStrip() {
                   Explorar <ArrowRight size={11} />
                 </span>
               </div>
-            </Link>
+            </a>
           ))}
         </div>
       </div>

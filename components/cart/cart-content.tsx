@@ -77,6 +77,11 @@ export function CartContent() {
           <Link href="/produtos" className="h-14 px-8 border border-[var(--border)] caps text-[12px] text-[var(--ink)] inline-flex items-center justify-center gap-2 hover:bg-[var(--cream)] transition">
             Voltar ao catálogo
           </Link>
+          {isAuthenticated && (
+            <a href="/minha-conta" className="h-14 px-8 border border-[var(--border)] caps text-[12px] text-[var(--ink)] inline-flex items-center justify-center gap-2 hover:bg-[var(--cream)] transition">
+              Ver meus pedidos
+            </a>
+          )}
         </div>
       </div>
     )
@@ -167,9 +172,9 @@ export function CartContent() {
               className="w-full h-12 px-4 border border-[var(--border)] bg-transparent text-[14px] outline-none focus:border-[var(--ink)] transition" />
           </div>
           <div>
-            <label className="caps text-[10px] text-muted-fg block mb-2">E-mail *</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com"
-              className="w-full h-12 px-4 border border-[var(--border)] bg-transparent text-[14px] outline-none focus:border-[var(--ink)] transition" />
+            <label className="caps text-[10px] text-muted-fg block mb-2">E-mail *{isAuthenticated && <span className="text-[9px] ml-1 opacity-60">(da sua conta)</span>}</label>
+            <input type="email" value={email} onChange={e => { if (!isAuthenticated) setEmail(e.target.value) }} readOnly={isAuthenticated} placeholder="seu@email.com"
+              className={`w-full h-12 px-4 border border-[var(--border)] bg-transparent text-[14px] outline-none focus:border-[var(--ink)] transition ${isAuthenticated ? "opacity-60 cursor-not-allowed" : ""}`} />
           </div>
           <div>
             <label className="caps text-[10px] text-muted-fg block mb-2">Observação (opcional)</label>

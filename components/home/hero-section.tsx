@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+// Using <a> for hard navigation
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
 import { WHATSAPP_NUMBER, createWhatsAppLink } from "@/lib/whatsapp"
@@ -112,19 +112,19 @@ export function HeroSection() {
                     {s.cta} <ArrowRight size={13} />
                   </a>
                 ) : (
-                  <Link
+                  <a
                     href={s.ctaHref}
                     className="inline-flex items-center gap-3 bg-white text-[var(--ink)] caps text-[10px] px-6 h-11 hover:bg-[var(--cream)] transition sm:text-[11px] sm:px-7 sm:h-12"
                   >
                     {s.cta} <ArrowRight size={13} />
-                  </Link>
+                  </a>
                 )}
-                <Link
+                <a
                   href="/produtos"
                   className="inline-flex items-center gap-2 text-white caps text-[10px] border-b border-white/40 hover:border-white pb-1 transition sm:text-[11px]"
                 >
                   Ver todas as peças
-                </Link>
+                </a>
               </div>
             </div>
           ))}

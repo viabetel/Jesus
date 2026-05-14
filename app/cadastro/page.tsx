@@ -1,213 +1,152 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useAuth } from "@/contexts/auth-context"
+import { Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
-import { formatPhone, isValidPhone, isValidEmail } from "@/lib/phone"
+import { useAuth } from "@/contexts/auth-context"
+import { formatPhone } from "@/lib/phone"
 
-export default function RegisterPage() {
+export default function CadastroPage() {
+  const { register, isAuthenticated } = useAuth()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [whatsapp, setWhatsapp] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [acceptTerms, setAcceptTerms] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [confirm, setConfirm] = useState("")
+  const [showPw, setShowPw] = useState(false)
+  const [agreed, setAgreed] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
 
-  const { register } = useAuth()
-  const router = useRouter()
+  if (isAuthenticated && typeof window !== "undefined") {
+    window.location.replace("/minha-conta")
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!name.trim()) { toast.error("Informe seu nome."); return }
+    if (!email.trim()) { toast.error("Informe seu e-mail."); return }
+    if (!whatsapp.trim()) { toast.error("Informe seu WhatsApp."); return }
+    if (password.length < 6) { toast.error("Senha deve ter pelo menos 6 caracteres."); return }
+    if (password !== confirm) { toast.error("As senhas não conferem."); return }
+    if (!agreed) { toast.error("Aceite a política de privacidade."); return }
 
-    if (!isValidPhone(whatsapp)) {
-      toast.error("Informe um WhatsApp válido com DDD")
+    setLoading(true)
+    const result = await register({ name: name.trim(), email: email.trim(), whatsapp: whatsapp.trim(), password })
+    setLoading(false)
+
+    if (!result.ok) {
+      toast.error(result.error || "Erro ao criar conta.")
       return
     }
 
-    if (!isValidEmail(email)) {
-      toast.error("Informe um e-mail válido")
+    if ("needsEmailConfirmation" in result && result.needsEmailConfirmation) {
+      setEmailSent(true)
+      toast.success("Conta criada! Verifique seu e-mail para confirmar.")
       return
     }
 
-    if (password.length < 4) {
-      toast.error("A senha deve ter pelo menos 4 caracteres")
-      return
-    }
+    toast.success("Conta criada com sucesso!")
+    window.location.assign("/minha-conta")
+  }
 
-    if (password !== confirmPassword) {
-      toast.error("As senhas não coincidem")
-      return
-    }
-
-    if (!acceptTerms) {
-      toast.error("Aceite a política de privacidade")
-      return
-    }
-
-    setIsLoading(true)
-    const result = await register({ name, email, whatsapp, password })
-
-    if (result.ok) {
-      toast.success("Conta criada com sucesso!")
-      router.push("/minha-conta")
-    } else {
-      toast.error(result.error || "Erro ao criar conta")
-    }
-    setIsLoading(false)
+  if (emailSent) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center px-6">
+        <div className="text-center max-w-md">
+          <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-6" />
+          <h1 className="font-serif text-[28px] font-bold">Verifique seu e-mail</h1>
+          <p className="mt-3 text-[14px] text-[var(--muted-foreground)] leading-relaxed">
+            Enviamos um link de confirmação para <strong>{email}</strong>.
+            Clique no link para ativar sua conta e então faça login.
+          </p>
+          <a href="/login" className="mt-8 inline-flex h-12 items-center justify-center rounded-lg bg-[var(--ink)] text-white px-8 text-[13px] font-semibold uppercase tracking-wider hover:bg-[var(--fg-soft)] transition">
+            Ir para Login
+          </a>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="flex min-h-dvh">
-      {/* Left Side — Form */}
-      <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-12 xl:px-24">
-        <div className="mx-auto w-full max-w-md">
-          <Link href="/" className="mb-8 inline-flex items-center gap-3">
-            <Image src="/brand/logo-dark.png" alt="Fashion Store" width={48} height={48} className="h-12 w-12" />
-            <span className="font-serif text-xl font-semibold">Fashion Store</span>
-          </Link>
+      <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-10 lg:w-1/2 lg:px-16 xl:px-24">
+        <a href="/" className="flex items-center gap-3 mb-10">
+          <div className="h-10 w-10 bg-[var(--ink)]" />
+          <span className="font-serif text-lg font-bold">Fashion Store</span>
+        </a>
 
-          <h1 className="font-serif text-2xl font-bold lg:text-3xl">Criar Conta</h1>
-          <p className="mt-2 text-muted-foreground">
-            Crie sua conta para favoritar produtos e acompanhar pedidos.
-          </p>
+        <h1 className="font-serif text-[28px] font-bold sm:text-[34px]">Criar Conta</h1>
+        <p className="mt-2 text-[14px] text-[var(--muted-foreground)]">
+          Crie sua conta para favoritar produtos e acompanhar pedidos.
+        </p>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
-            <div>
-              <Label htmlFor="reg-name">Nome completo</Label>
-              <Input
-                id="reg-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome"
-                autoComplete="name"
-                enterKeyHint="next"
-                className="mt-1 h-11 text-base"
-                required
-              />
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4 max-w-md">
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5">Nome completo</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)}
+              placeholder="Seu nome" autoComplete="name" autoFocus
+              className="w-full h-12 rounded-lg border border-[var(--border)] bg-transparent px-4 text-[14px] outline-none focus:border-[var(--ink)] transition" />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5">E-mail</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="seu@email.com" autoComplete="email"
+              className="w-full h-12 rounded-lg border border-[var(--border)] bg-transparent px-4 text-[14px] outline-none focus:border-[var(--ink)] transition" />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5">WhatsApp</label>
+            <input type="tel" value={whatsapp} onChange={e => setWhatsapp(formatPhone(e.target.value))}
+              placeholder="(32) 99999-9999" autoComplete="tel"
+              className="w-full h-12 rounded-lg border border-[var(--border)] bg-transparent px-4 text-[14px] outline-none focus:border-[var(--ink)] transition" />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5">Senha</label>
+            <div className="relative">
+              <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres" autoComplete="new-password"
+                className="w-full h-12 rounded-lg border border-[var(--border)] bg-transparent px-4 pr-12 text-[14px] outline-none focus:border-[var(--ink)] transition" />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]">
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5">Confirmar senha</label>
+            <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
+              placeholder="Repita a senha" autoComplete="new-password"
+              className="w-full h-12 rounded-lg border border-[var(--border)] bg-transparent px-4 text-[14px] outline-none focus:border-[var(--ink)] transition" />
+          </div>
 
-            <div>
-              <Label htmlFor="reg-email">E-mail</Label>
-              <Input
-                id="reg-email"
-                type="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                autoComplete="email"
-                enterKeyHint="next"
-                className="mt-1 h-11 text-base"
-                required
-              />
-            </div>
+          <label className="flex items-start gap-2 cursor-pointer pt-1">
+            <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-[var(--border)]" />
+            <span className="text-[12px] text-[var(--muted-foreground)]">
+              Li e aceito a <a href="/privacidade" className="underline underline-offset-2 font-medium text-[var(--ink)]">política de privacidade</a>
+            </span>
+          </label>
 
-            <div>
-              <Label htmlFor="reg-whatsapp">WhatsApp</Label>
-              <Input
-                id="reg-whatsapp"
-                type="tel"
-                inputMode="tel"
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(formatPhone(e.target.value))}
-                placeholder="(32) 99999-9999"
-                autoComplete="tel"
-                enterKeyHint="next"
-                maxLength={15}
-                className="mt-1 h-11 text-base"
-                required
-              />
-            </div>
+          <button type="submit" disabled={loading}
+            className="w-full h-12 rounded-lg bg-[var(--ink)] text-white text-[13px] font-semibold uppercase tracking-wider hover:bg-[var(--fg-soft)] transition disabled:opacity-60 flex items-center justify-center gap-2">
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {loading ? "Criando..." : "Criar conta"}
+          </button>
+        </form>
 
-            <div>
-              <Label htmlFor="reg-password">Senha</Label>
-              <div className="relative mt-1">
-                <Input
-                  id="reg-password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Crie uma senha"
-                  autoComplete="new-password"
-                  enterKeyHint="next"
-                  className="h-11 pr-10 text-base"
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground touch-target"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="reg-confirm">Confirmar senha</Label>
-              <Input
-                id="reg-confirm"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirme sua senha"
-                autoComplete="new-password"
-                enterKeyHint="done"
-                className="mt-1 h-11 text-base"
-                required
-              />
-            </div>
-
-            <div className="flex items-start gap-2 pt-2">
-              <Checkbox
-                id="terms"
-                checked={acceptTerms}
-                onCheckedChange={(checked) => setAcceptTerms(!!checked)}
-              />
-              <Label htmlFor="terms" className="text-sm font-normal leading-relaxed">
-                Li e aceito a{" "}
-                <Link href="/privacidade" className="underline hover:text-muted-foreground">
-                  política de privacidade
-                </Link>
-              </Label>
-            </div>
-
-            <Button type="submit" className="w-full h-11 text-base touch-target" disabled={isLoading || !acceptTerms}>
-              {isLoading ? "Criando conta..." : "Criar conta"}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Já tem uma conta?{" "}
-            <Link href="/login" className="font-medium text-foreground underline hover:text-muted-foreground">
-              Entrar
-            </Link>
-          </p>
-
-          <Link href="/" className="mt-8 block text-center text-sm text-muted-foreground hover:text-foreground">
-            Voltar para a loja
-          </Link>
-        </div>
+        <p className="mt-6 text-[13px] text-[var(--muted-foreground)]">
+          Já tem conta? <a href="/login" className="font-semibold text-[var(--ink)] underline underline-offset-2">Entrar</a>
+        </p>
       </div>
 
-      {/* Right Side */}
-      <div className="hidden bg-[#1a1a1a] lg:block lg:w-1/2">
-        <div className="flex h-full flex-col items-center justify-center p-12 text-[#FAF9F6]">
-          <Image src="/brand/logo-light.png" alt="Fashion Store" width={120} height={120} className="h-28 w-28" />
-          <h2 className="mt-8 text-center font-serif text-3xl font-bold">Faça parte da Fashion Store</h2>
-          <p className="mt-4 max-w-md text-center text-[#FAF9F6]/60">
+      <div className="hidden bg-[var(--ink)] lg:flex lg:w-1/2 lg:items-center lg:justify-center">
+        <div className="text-center px-12">
+          <div className="mx-auto h-24 w-24 rounded-full bg-white/5 flex items-center justify-center mb-8">
+            <div className="h-12 w-12 bg-white/10 rounded" />
+          </div>
+          <h2 className="font-serif text-white text-[28px] font-bold">Faça parte da Fashion Store</h2>
+          <p className="mt-3 text-white/60 text-[14px] max-w-sm mx-auto leading-relaxed">
             Crie sua conta e tenha acesso a favoritos, histórico de pedidos e ofertas exclusivas.
           </p>
         </div>

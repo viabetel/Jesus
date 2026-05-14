@@ -51,7 +51,13 @@ export async function POST(request: Request) {
   // Validate required fields
   const customerName = typeof b.customerName === "string" ? b.customerName.trim() : ""
   const customerWhatsapp = typeof b.customerWhatsapp === "string" ? b.customerWhatsapp.trim() : ""
-  const customerEmail = typeof b.customerEmail === "string" ? b.customerEmail.trim() : undefined
+  const customerEmailFromBody = typeof b.customerEmail === "string" ? b.customerEmail.trim() : ""
+  const items = Array.isArray(b.items) ? b.items : []
+  const address = typeof b.address === "string" ? b.address.trim() : undefined
+  const observation = typeof b.observation === "string" ? b.observation.trim() : undefined
+
+  // If logged in, use session email (not form email)
+  const customerEmail = authUser?.email || customerEmailFromBody
   const items = Array.isArray(b.items) ? b.items : []
   const address = typeof b.address === "string" ? b.address.trim() : undefined
   const observation = typeof b.observation === "string" ? b.observation.trim() : undefined

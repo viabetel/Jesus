@@ -53,7 +53,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {
-      router.push("/login")
+      window.location.replace("/login?next=/minha-conta")
       return
     }
     if (user) {
@@ -67,10 +67,14 @@ export default function AccountPage() {
     }
   }, [isAuthenticated, isHydrated, user, router])
 
-  const handleSave = () => {
-    updateUser(formData)
-    setIsEditing(false)
-    toast.success("Dados atualizados com sucesso!")
+  const handleSave = async () => {
+    const result = await updateUser(formData)
+    if (result.ok) {
+      setIsEditing(false)
+      toast.success("Dados atualizados com sucesso!")
+    } else {
+      toast.error(result.error || "Erro ao salvar dados.")
+    }
   }
 
   const handleLogout = () => {
@@ -170,8 +174,8 @@ export default function AccountPage() {
                     <Input id="acct-name" autoComplete="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} disabled={!isEditing} className="mt-1 h-11 text-base" />
                   </div>
                   <div>
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input id="acct-email" type="email" inputMode="email" autoComplete="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} disabled={!isEditing} className="mt-1 h-11 text-base" />
+                    <Label htmlFor="email">E-mail <span className="text-xs text-muted-foreground font-normal">(não editável)</span></Label>
+                    <Input id="acct-email" type="email" value={formData.email} disabled className="mt-1 h-11 text-base opacity-60" />
                   </div>
                   <div>
                     <Label htmlFor="whatsapp">WhatsApp</Label>

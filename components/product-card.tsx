@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+// Hard navigation for public pages
+const Link = "a" as unknown as typeof import("next/link").default
 import Image from "next/image"
 import { Heart, Play, MessageCircle } from "lucide-react"
 import { useFavorites } from "@/contexts/favorites-context"
@@ -133,13 +134,13 @@ export function ProductCard({ product }: { product: CardProduct }) {
             </span>
           </div>
         </div>
-      </Link>
+      </a>
 
       {/* Info */}
       <div className="pt-4 pb-2 px-1 text-center sm:pt-5">
-        <Link href={`/produto/${product.slug}`}>
+        <a href={`/produto/${product.slug}`}>
           <h3 className="caps text-[10px] tracking-[0.14em] text-[var(--ink)] line-clamp-2 sm:text-[11.5px]">{product.name}</h3>
-        </Link>
+        </a>
 
         <div className="mt-1.5 flex items-baseline justify-center gap-2 sm:mt-2">
           {product.originalPrice && (

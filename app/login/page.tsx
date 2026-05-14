@@ -1,127 +1,101 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useAuth } from "@/contexts/auth-context"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function LoginPage() {
+  const { login, isAuthenticated } = useAuth()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [showPw, setShowPw] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const { login } = useAuth()
-  const router = useRouter()
+  // returnTo: only accept internal paths
+  const next = searchParams.get("next") || "/minha-conta"
+  const returnTo = next.startsWith("/") ? next : "/minha-conta"
+
+  // If already authenticated, redirect immediately
+  if (isAuthenticated && typeof window !== "undefined") {
+    window.location.replace(returnTo)
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    if (!email.trim() || !password) { toast.error("Preencha todos os campos."); return }
+    setLoading(true)
 
-    const result = await login(email, password)
+    const result = await login(email.trim(), password)
+    setLoading(false)
 
     if (result.ok) {
-      toast.success("Login realizado com sucesso!")
-      router.push("/minha-conta")
+      toast.success("Login realizado!")
+      window.location.assign(returnTo)
     } else {
-      toast.error(result.error || "E-mail ou senha incorretos")
+      toast.error(result.error || "Erro ao entrar.")
     }
-    setIsLoading(false)
   }
 
   return (
     <div className="flex min-h-dvh">
-      {/* Left Side — Form */}
-      <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-12 xl:px-24">
-        <div className="mx-auto w-full max-w-md">
-          <Link href="/" className="mb-8 inline-flex items-center gap-3">
-            <Image src="/brand/logo-dark.png" alt="Fashion Store" width={48} height={48} className="h-12 w-12" />
-            <span className="font-serif text-xl font-semibold">Fashion Store</span>
-          </Link>
+      {/* Form side */}
+      <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-10 lg:w-1/2 lg:px-16 xl:px-24">
+        <a href="/" className="flex items-center gap-3 mb-10">
+          <div className="h-10 w-10 bg-[var(--ink)]" />
+          <span className="font-serif text-lg font-bold">Fashion Store</span>
+        </a>
 
-          <h1 className="font-serif text-2xl font-bold lg:text-3xl">Entrar</h1>
-          <p className="mt-2 text-muted-foreground">
-            Acesse sua conta para ver favoritos e histórico de pedidos.
-          </p>
+        <h1 className="font-serif text-[28px] font-bold sm:text-[34px]">Entrar</h1>
+        <p className="mt-2 text-[14px] text-[var(--muted-foreground)]">
+          Acesse sua conta para acompanhar pedidos e favoritos.
+        </p>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
-            <div>
-              <Label htmlFor="login-email">E-mail</Label>
-              <Input
-                id="login-email"
-                type="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                autoComplete="email"
-                enterKeyHint="next"
-                className="mt-1 h-11 text-base"
-                required
-              />
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5 max-w-md">
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5">E-mail</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="seu@email.com" autoComplete="email" autoFocus
+              className="w-full h-12 rounded-lg border border-[var(--border)] bg-transparent px-4 text-[14px] outline-none focus:border-[var(--ink)] transition" />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5">Senha</label>
+            <div className="relative">
+              <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••" autoComplete="current-password"
+                className="w-full h-12 rounded-lg border border-[var(--border)] bg-transparent px-4 pr-12 text-[14px] outline-none focus:border-[var(--ink)] transition" />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--ink)]">
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
+          </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="login-password">Senha</Label>
-                <button type="button" className="text-sm text-muted-foreground hover:text-foreground touch-target">
-                  Esqueci minha senha
-                </button>
-              </div>
-              <div className="relative mt-1">
-                <Input
-                  id="login-password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Sua senha"
-                  autoComplete="current-password"
-                  enterKeyHint="go"
-                  className="h-11 pr-10 text-base"
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground touch-target"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
+          <button type="submit" disabled={loading}
+            className="w-full h-12 rounded-lg bg-[var(--ink)] text-white text-[13px] font-semibold uppercase tracking-wider hover:bg-[var(--fg-soft)] transition disabled:opacity-60 flex items-center justify-center gap-2">
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
 
-            <Button type="submit" className="w-full h-11 text-base touch-target" disabled={isLoading}>
-              {isLoading ? "Entrando..." : "Entrar"}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Não tem uma conta?{" "}
-            <Link href="/cadastro" className="font-medium text-foreground underline hover:text-muted-foreground">
-              Criar conta
-            </Link>
-          </p>
-
-          <Link href="/" className="mt-8 block text-center text-sm text-muted-foreground hover:text-foreground">
-            Voltar para a loja
-          </Link>
-        </div>
+        <p className="mt-6 text-[13px] text-[var(--muted-foreground)]">
+          Não tem conta? <a href="/cadastro" className="font-semibold text-[var(--ink)] underline underline-offset-2">Criar conta</a>
+        </p>
       </div>
 
-      {/* Right Side */}
-      <div className="hidden bg-[#1a1a1a] lg:block lg:w-1/2">
-        <div className="flex h-full flex-col items-center justify-center p-12 text-[#FAF9F6]">
-          <Image src="/brand/logo-light.png" alt="Fashion Store" width={120} height={120} className="h-28 w-28" />
-          <h2 className="mt-8 text-center font-serif text-3xl font-bold">Vista propósito com estilo.</h2>
-          <p className="mt-4 max-w-md text-center text-[#FAF9F6]/60">
-            Camisetas cristãs criadas para expressar fé, identidade e mensagem no seu dia a dia.
+      {/* Image side (desktop only) */}
+      <div className="hidden bg-[var(--ink)] lg:flex lg:w-1/2 lg:items-center lg:justify-center">
+        <div className="text-center px-12">
+          <div className="mx-auto h-24 w-24 rounded-full bg-white/5 flex items-center justify-center mb-8">
+            <div className="h-12 w-12 bg-white/10 rounded" />
+          </div>
+          <h2 className="font-serif text-white text-[28px] font-bold">Bem-vindo de volta</h2>
+          <p className="mt-3 text-white/60 text-[14px] max-w-sm mx-auto leading-relaxed">
+            Entre na sua conta para acompanhar pedidos, salvar favoritos e aproveitar ofertas exclusivas.
           </p>
         </div>
       </div>

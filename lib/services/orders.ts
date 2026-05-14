@@ -62,6 +62,7 @@ export interface CreateOrderInput {
   items: OrderItemInput[]
   address?: string
   observation?: string
+  userId?: string
 }
 
 export type CreateOrderError =
@@ -316,6 +317,7 @@ async function createOrderInSupabase(
       status: "recebido",
       address: input.address?.trim() || null,
       observation: input.observation?.trim() || null,
+      user_id: input.userId || null,
       created_at: now,
       updated_at: now,
     })
